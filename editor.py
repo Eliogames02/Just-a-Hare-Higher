@@ -24,6 +24,7 @@ class Editor:
         # assets setup
         self.assets = {
             'dirt': load_images('tiles/dirt'),
+            'collectible': load_images('tiles/collectible'),
         }
 
         # scroll movement setup
@@ -152,6 +153,7 @@ def event_handler(self) -> None:
 
             if event.key == py.K_o:
                 self.tilemap.save('data/maps/map.json')
+                print('Map Saved')
 
 
         if event.type == py.KEYUP:
