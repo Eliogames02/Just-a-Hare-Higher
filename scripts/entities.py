@@ -1,5 +1,5 @@
 import pygame as py
-import math
+import math, random
 
 class PhysicsEntity:
     def __init__(self, game, e_type: str, tilemap, pos, size: tuple) -> None:
@@ -11,6 +11,7 @@ class PhysicsEntity:
         self.velocity = [0, 0]
         self.stored_velocity = [0, 0]
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
+        self.id_options = ['0','1','2','3','4','5','6','7','8', '9', 'A','B','C','D','E','F']
 
         self.air_time = 0 # used to calculate when to switch between jump sprites and other sprite animations
         self.jumps = 1 # number of jumps an entity has
@@ -36,7 +37,7 @@ class PhysicsEntity:
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
         # handle horizontal collision
-        self.pos[0] += frame_movement[0]
+        self.pos[0] += frame_movement[0] * self.game.delta_time/2
         entity_rect = self.rect()
         for rect in tilemap.physics_rects_around(self.pos):
             if entity_rect.colliderect(rect):
@@ -49,7 +50,7 @@ class PhysicsEntity:
                 self.pos[0] = entity_rect.x
 
         # handle vertical collision
-        self.pos[1] += frame_movement[1]
+        self.pos[1] += frame_movement[1] * self.game.delta_time/2
         entity_rect = self.rect()
         for rect in tilemap.physics_rects_around(self.pos):
             if entity_rect.colliderect(rect):
@@ -63,11 +64,11 @@ class PhysicsEntity:
 
         # gravity
         if not self.is_touching_ground(tilemap):
-            self.velocity[1] = round(min(5, self.velocity[1] + 0.1), 2)
+            self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
 
         # complex jump mechanic
         if stored_movement[1] != False:
-            self.stored_velocity[1] = round(max(-10, min(-2.5, self.stored_velocity[1]) - 0.1), 2)
+            self.stored_velocity[1] = round(max(-10, min(-2.5, self.stored_velocity[1]) - 0.1 * self.game.delta_time), 2)
         elif self.get_coyote_time() <= 0.25 and self.jumps == 1:
             self.velocity[1] += self.stored_velocity[1]
             self.stored_velocity[1] = 0
@@ -100,12 +101,12 @@ class PhysicsEntity:
                 self.jumps = 1
                 self.coyote_time = 0
                 return True
-        self.coyote_time += 1
+        self.coyote_time += (self.game.delta_time /65)
         return False                
     
     def get_coyote_time(self) -> float:
         self.is_touching_ground(self.tm)
-        return round(self.coyote_time / 60, 2)
+        return round(self.coyote_time, 5)
 
 class Player(PhysicsEntity):
     def __init__(self, game, pos, size):
@@ -124,17 +125,61 @@ class Player(PhysicsEntity):
             self.set_action('idle')'''
         
 class Collectible(PhysicsEntity):
-    def __init__(self, game, pos, size):
+    def __init__(self, game, pos, size, variant=0):
         super().__init__(game, 'collectible', game.tilemap, pos, size)
         self.is_collected = False
-        self.set_action('carrot')
+        self.variant = variant # 0 for carrot, 1 for radish
+        if self.variant == 0:
+            self.set_action('carrot')
+        else: self.set_action('radish')
 
     def update(self):
-        self.pos[1] += 0.25 * math.sin(py.time.get_ticks() / 1000)
+        self.pos[1] += math.sin(py.time.get_ticks()/250) * 0.5 * self.game.delta_time
+        self.collected()
     
     def collected(self):
         if self.rect().colliderect(self.game.player.rect()):
             self.game.collectibles.remove(self)
-            print(f'Collected {self.__class__.__name__}')
             return True
         return False
+
+class Enemy(PhysicsEntity):
+    def __init__(self, game, pos, size, id='00000000'):
+        super().__init__(game, 'enemy', game.tilemap, pos, size)
+        self.set_action('test')
+        self.velocity = [2, 0]
+        self.id = id
+
+        for enemy in game.enemies:
+            if enemy.id == self.id:
+                self.id = random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options)
+    def update(self, tilemap, movement=(0, 0), stored_movement=(0, 0)):
+
+        super().update(tilemap, movement=movement, stored_movement=stored_movement)
+
+        if self.velocity[0] < 0:
+            new_pos = (self.pos[0] - 1, self.pos[1] + 1)
+            tile_rect = tilemap.physics_specific_rect(new_pos, (0, 1))
+            if not py.Rect(new_pos, self.size).colliderect(tile_rect): # if the tile below where it's about to be isn't collideable it turns
+                self.velocity[0] *= -1
+            tile_rect = tilemap.physics_specific_rect(self.pos, (-1, 0))
+            if py.Rect(new_pos, self.size).colliderect(tile_rect): # if run into wall, turn
+                self.velocity[0] *= -1
+
+        if self.velocity[0] > 0:
+            new_pos = (self.pos[0] + self.size[0], self.pos[1] + 1)
+            tile_rect = tilemap.physics_specific_rect(new_pos, (0, 1))
+            if not py.Rect(new_pos, self.size).colliderect(tile_rect):
+                self.velocity[0] *= -1
+            tile_rect = tilemap.physics_specific_rect(self.pos, (1, 0))
+            if py.Rect(new_pos, self.size).colliderect(tile_rect):
+                self.velocity[0] *= -1
+
+        for enemy in self.game.enemies:
+            if self.rect().colliderect(enemy.rect()) and enemy.id != self.id:
+               self.velocity[0] *= -1
+
+        #if self.rect().colliderect(self.game.player.rect()):
+         #  print('GAME OVER!')
+           #self.game.exit_game()
+        

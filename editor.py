@@ -12,8 +12,9 @@ class Editor:
         
         # window setup
         py.display.set_caption('editor')
-        self.screen = py.display.set_mode((640, 480))
-        self.display = py.Surface((320, 240))
+        self.screen = py.display.set_mode((1280, 960))
+        self.display = py.Surface((640, 480))
+        map_name = ''
 
         # clock/fps setup
         self.clock = py.time.Clock()
@@ -25,6 +26,7 @@ class Editor:
         self.assets = {
             'dirt': load_images('tiles/dirt'),
             'collectible': load_images('tiles/collectible'),
+            'spawner': load_images('tiles/spawners'),
         }
 
         # scroll movement setup
@@ -33,7 +35,7 @@ class Editor:
         #tilemap
         self.tilemap = Tilemap(self, tile_size=16)
         try:
-            self.tilemap.load('data/maps/map.json')
+            self.tilemap.load(f'data/maps/0.json')
         except FileNotFoundError:
             pass
 
@@ -54,8 +56,8 @@ class Editor:
             self.display.fill((0, 0, 0))
 
             # Scroll handling
-            self.scroll[0] += (self.movement[1] - self.movement[0]) * 3
-            self.scroll[1] += (self.movement[3] - self.movement[2]) * 3
+            self.scroll[0] += (self.movement[1] - self.movement[0]) * 5 # multiply movement to speed up scrolling
+            self.scroll[1] += (self.movement[3] - self.movement[2]) * 5
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
             # renders the tilemap and takes into account the scroll
@@ -81,12 +83,12 @@ class Editor:
                 self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (tile_pos[0], tile_pos[1])}
             if self.right_clicking:
                 tile_location = str(tile_pos[0]) + ';' + str(tile_pos[1])
-                if tile_location in self.tilemap.tilemap:
+                if tile_location in self.tilemap.tilemap and self.ongrid == True:
                     del self.tilemap.tilemap[tile_location]
                 for tile in self.tilemap.offgrid_tiles.copy():
                     tile_img = self.assets[tile['type']][tile['variant']]
                     tile_r = py.Rect(tile['pos'][0] - self.scroll[0], tile['pos'][1] - self.scroll[1], tile_img.get_width(), tile_img.get_height())
-                    if tile_r.collidepoint(self.mouse_pos):
+                    if tile_r.collidepoint(self.mouse_pos) and self.ongrid == False:
                         self.tilemap.offgrid_tiles.remove(tile)
 
             event_handler(self) 
@@ -152,7 +154,8 @@ def event_handler(self) -> None:
                 self.shift = True
 
             if event.key == py.K_o:
-                self.tilemap.save('data/maps/map.json')
+                map_name = input('Enter level name -> ')
+                self.tilemap.save(f'data/maps/{map_name}.json')
                 print('Map Saved')
 
 

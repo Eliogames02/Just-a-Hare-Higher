@@ -20,7 +20,7 @@ class Tilemap:
                 if not keep:
                     self.offgrid_tiles.remove(tile)
 
-        for location in self.tilemap:
+        for location in list(self.tilemap):
             tile = self.tilemap[location]
             if (tile['type'], tile['variant']) in id_pairs:
                 matches.append(tile.copy())
@@ -40,6 +40,13 @@ class Tilemap:
             if check_location in self.tilemap:
                 tiles.append(self.tilemap[check_location])
         return tiles
+
+    def specific_tile_around(self, pos, tile_offset):
+        tile_location = (int(pos[0] // self.tile_size), int(pos[1] // self.tile_size))
+        check_location = str(tile_location[0] + tile_offset[0]) + ';' + str(tile_location[1] + tile_offset[1])
+        if check_location in self.tilemap:
+            return self.tilemap[check_location]
+        return None
     
     def save(self, path):
         with open(path, 'w') as f:
@@ -59,6 +66,12 @@ class Tilemap:
             if tile['type'] in PHYSICS_TILES:
                 rects.append(py.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size))
         return rects
+    
+    def physics_specific_rect(self, pos, tile_offset):
+        tile = self.specific_tile_around(pos, tile_offset)
+        if tile == None: return py.Rect(-1000, -1000, 1, 1) # THE NONE RECT IS REAL
+        if tile['type'] in PHYSICS_TILES:
+            return py.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size)
     
     #* Autotiling isn't helpful here because the tiles srites aren't finished yet
     #def autotile(self):
