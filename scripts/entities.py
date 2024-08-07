@@ -113,8 +113,8 @@ class Player(PhysicsEntity):
         super().__init__(game, 'player', game.tilemap, pos, size)
         self.set_action('idle') # Sets the initial action
 
-    def update(self, tilemap, movement=(0, 0), stored_movement=(0, 0)):
-        super().update(tilemap, movement=movement, stored_movement=stored_movement)
+    def update(self, movement=(0, 0), stored_movement=(0, 0)):
+        super().update(self.game.tilemap, movement=movement, stored_movement=stored_movement)
         
         # Changes the current sprite of the player based on movement.
         '''if self.air_time > 4:
@@ -144,34 +144,47 @@ class Collectible(PhysicsEntity):
         return False
 
 class Enemy(PhysicsEntity):
-    def __init__(self, game, pos, size, id='00000000'):
-        super().__init__(game, 'enemy', game.tilemap, pos, size)
+    def __init__(self, game, pos, size, enemy_type, id='00000000'):
+        super().__init__(game, enemy_type, game.tilemap, pos, size)
         self.set_action('test')
-        self.velocity = [2, 0]
         self.id = id
+        self.enemy_type = enemy_type
 
-        for enemy in game.enemies:
-            if enemy.id == self.id:
-                self.id = random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options)
-    def update(self, tilemap, movement=(0, 0), stored_movement=(0, 0)):
+        while self.id in game.enemies_id:
+            self.id = random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options)
+        game.enemies_id.append(self.id)
 
-        super().update(tilemap, movement=movement, stored_movement=stored_movement)
+    def update(self):
 
+        super().update(self.game.tilemap)
+
+        #if self.rect().colliderect(self.game.player.rect()):
+         #  print('GAME OVER!')
+           #self.game.exit_game()
+
+
+class TickEnemy(Enemy):
+    def __init__(self, game, pos, size):
+        super().__init__(game, pos, size, 'tick_enemy')
+        self.velocity = [2, 0]
+
+    def update(self):
+        super().update()
         if self.velocity[0] < 0:
             new_pos = (self.pos[0] - 1, self.pos[1] + 1)
-            tile_rect = tilemap.physics_specific_rect(new_pos, (0, 1))
+            tile_rect = self.game.tilemap.physics_specific_rect(new_pos, (0, 1))
             if not py.Rect(new_pos, self.size).colliderect(tile_rect): # if the tile below where it's about to be isn't collideable it turns
                 self.velocity[0] *= -1
-            tile_rect = tilemap.physics_specific_rect(self.pos, (-1, 0))
+            tile_rect = self.game.tilemap.physics_specific_rect(self.pos, (-1, 0))
             if py.Rect(new_pos, self.size).colliderect(tile_rect): # if run into wall, turn
                 self.velocity[0] *= -1
 
         if self.velocity[0] > 0:
             new_pos = (self.pos[0] + self.size[0], self.pos[1] + 1)
-            tile_rect = tilemap.physics_specific_rect(new_pos, (0, 1))
+            tile_rect = self.game.tilemap.physics_specific_rect(new_pos, (0, 1))
             if not py.Rect(new_pos, self.size).colliderect(tile_rect):
                 self.velocity[0] *= -1
-            tile_rect = tilemap.physics_specific_rect(self.pos, (1, 0))
+            tile_rect = self.game.tilemap.physics_specific_rect(self.pos, (1, 0))
             if py.Rect(new_pos, self.size).colliderect(tile_rect):
                 self.velocity[0] *= -1
 
@@ -179,7 +192,57 @@ class Enemy(PhysicsEntity):
             if self.rect().colliderect(enemy.rect()) and enemy.id != self.id:
                self.velocity[0] *= -1
 
-        #if self.rect().colliderect(self.game.player.rect()):
-         #  print('GAME OVER!')
-           #self.game.exit_game()
+class DungEnemy(Enemy):
+    def __init__(self, game, pos, size):
+        super().__init__(game, pos, size, 'dung_enemy')
+        self.x_player_offset = self.pos[0] - self.game.player.pos[0]
+        self.y_player_offset = self.pos[1] - self.game.player.pos[1]
+        self.projectile_id = '00000000'
+        self.time_since_throw = 0
         
+        
+    def update(self):
+        super().update()
+        self.x_player_offset = self.pos[0] - self.game.player.pos[0]
+        self.y_player_offset = self.pos[1] - self.game.player.pos[1]
+        if self.distance_to_player() <= 240 and self.time_since_throw >= 2:
+            self.throw_projectile()
+            self.time_since_throw = 0
+        else: self.time_since_throw += self.game.delta_time/60
+    
+    def throw_projectile(self):
+        while self.projectile_id in self.game.projectiles_id:
+            self.projectile_id = random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options)
+        self.game.projectiles_id.append(self.projectile_id)
+        self.game.projectiles[self.projectile_id] = Projectile(self.game, self.pos, (4, 4), self.x_player_offset, self.y_player_offset, self.projectile_id)
+
+    def distance_to_player(self):
+        return ((self.x_player_offset)**2 + (self.y_player_offset)**2)**0.5
+
+class Projectile(PhysicsEntity):
+    def __init__(self, game, pos, size, x_distance_to_player, y_distance_to_player, id):
+        super().__init__(game, 'projectile', game.tilemap, pos, size)
+        self.set_action('poop')
+        self.id = id
+        self.falling = -1 # 1 is falling, -1 isn't falling
+        self.velocity = [x_distance_to_player/self.game.tilemap.tile_size/2 * -1, (-1 * abs(y_distance_to_player)/self.game.tilemap.tile_size)/2 - 6]
+    def update(self):
+        super().update(self.game.tilemap)
+
+        self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
+
+        if self.velocity[1] > 0:
+            self.falling = 1
+        
+        projectile_rect = self.rect()
+        for collision in self.collisions.values():
+            if collision == True:
+                self.game.projectiles_to_delete.append(self.id)
+                return
+        for enemy in self.game.enemies:
+            if projectile_rect.colliderect(enemy.rect()) and enemy.enemy_type != 'dung_enemy':
+                self.game.projectiles_to_delete.append(self.id)
+                return
+        if projectile_rect.colliderect(self.game.player.rect()):
+            self.game.projectiles_to_delete.append(self.id)
+            return

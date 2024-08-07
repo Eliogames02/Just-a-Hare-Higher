@@ -1,6 +1,6 @@
 import pygame as py
 import sys, time
-from scripts.entities import PhysicsEntity, Player, Collectible, Enemy 
+from scripts.entities import PhysicsEntity, Player, Collectible, Enemy, TickEnemy, DungEnemy
 from scripts.utils import load_image, load_images, Animation
 from scripts.clouds import Clouds
 from scripts.tilemap import Tilemap
@@ -35,7 +35,9 @@ class Game:
             'collectible/carrot': Animation(load_images('tiles/collectible/carrot')),
             'collectible/radish': Animation(load_images('tiles/collectible/radish')),
             'player/idle': Animation(load_images('entities/player')),
-            'enemy/test': Animation(load_images('entities/enemy1')),
+            'tick_enemy/test': Animation(load_images('entities/tick_enemy')),
+            'dung_enemy/test': Animation(load_images('entities/dung_enemy')),
+            'projectile/poop': Animation(load_images('entities/projectiles')),
         }
 
         #tilemap
@@ -67,18 +69,27 @@ class Game:
  
             self.tilemap.render(self.display, offset=render_scroll)
 
-            self.player.update(self.tilemap, ((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
+            self.player.update(((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
             self.player.render(self.display, offset=render_scroll)
-            self.player.update(self.tilemap, ((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
+            self.player.update(((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
 
             for collectible in self.collectibles:
                 collectible.update()
                 collectible.render(self.display, offset=render_scroll)
 
             for enemy in self.enemies:
-                enemy.update(self.tilemap)
-                print(enemy.pos, enemy.velocity)
+                enemy.update()
                 enemy.render(self.display, offset=render_scroll)
+            
+            self.projectiles_to_delete = []
+            for projectile in self.projectiles.values():
+                projectile.update()
+                projectile.render(self.display, offset=render_scroll)
+
+            for projectile in self.projectiles_to_delete:
+                self.projectiles_id.remove(projectile)
+                del self.projectiles[projectile]
+            self.projectiles_to_delete.clear()
 
             self.event_handler() 
     
@@ -135,6 +146,10 @@ class Game:
         except FileNotFoundError:
             print("Could not find the Level File(hint: it's a json file)")
             self.exit_game()
+        
+        # creates list to hold all projectiles
+        self.projectiles = {}
+        self.projectiles_id = []
 
         # collectibles
         self.collectibles = []
@@ -144,11 +159,13 @@ class Game:
             else: self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 1))
         
         self.enemies = []
-        for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1)]):
+        self.enemies_id = []
+        for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
-            else:
-                self.enemies.append(Enemy(self, spawner['pos'], (16, 16)))
+            elif spawner['variant'] == 1:
+                self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
+            else: self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
     
 game = Game()
 game.run()
