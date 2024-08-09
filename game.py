@@ -1,6 +1,6 @@
 import pygame as py
 import sys, time
-from scripts.entities import PhysicsEntity, Player, Collectible, Enemy, TickEnemy, DungEnemy
+from scripts.entities import *
 from scripts.utils import load_image, load_images, Animation
 from scripts.clouds import Clouds
 from scripts.tilemap import Tilemap
@@ -30,6 +30,7 @@ class Game:
         self.assets = {
             'player': load_image('entities/player/player_test.png'),
             'dirt': load_images('tiles/dirt'),
+            'spawner': load_images('tiles/spawners'),
             'clouds': load_images('clouds'),
             'background': load_image('Background.png'),
             'collectible/carrot': Animation(load_images('tiles/collectible/carrot')),
@@ -37,6 +38,7 @@ class Game:
             'player/idle': Animation(load_images('entities/player')),
             'tick_enemy/test': Animation(load_images('entities/tick_enemy')),
             'dung_enemy/test': Animation(load_images('entities/dung_enemy')),
+            'mole/test': Animation(load_images('entities/mole')),
             'projectile/poop': Animation(load_images('entities/projectiles')),
         }
 
@@ -165,7 +167,10 @@ class Game:
                 self.player.pos = spawner['pos']
             elif spawner['variant'] == 1:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
-            else: self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
+            elif spawner['variant'] == 2: 
+                self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
+        for spawner in self.tilemap.extract([('spawner', 3)], True):
+            self.enemies.append(Mole(self, spawner['pos'], (16, 16)))
     
 game = Game()
 game.run()

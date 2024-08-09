@@ -218,6 +218,15 @@ class DungEnemy(Enemy):
 
     def distance_to_player(self):
         return ((self.x_player_offset)**2 + (self.y_player_offset)**2)**0.5
+    
+class Mole(Enemy):
+    def __init__(self, game, pos, size):
+        super().__init__(game, pos, size,'mole')
+        self.pos[1] -= 1
+        
+    def update(self):
+        if self.rect().colliderect(self.game.player.rect()):
+            self.game.player.pos[1] += 32
 
 class Projectile(PhysicsEntity):
     def __init__(self, game, pos, size, x_distance_to_player, y_distance_to_player, id):
