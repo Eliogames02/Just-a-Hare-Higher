@@ -30,6 +30,7 @@ class Game:
         self.assets = {
             'player': load_image('entities/player/player_test.png'),
             'dirt': load_images('tiles/dirt'),
+            'empty_dirt': load_images('tiles/empty_dirt'),
             'clouds': load_images('clouds'),
             'background': load_image('Background.png'),
             'collectible/carrot': Animation(load_images('tiles/collectible/carrot')),

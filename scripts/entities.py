@@ -64,7 +64,9 @@ class PhysicsEntity:
 
         # gravity
         if not self.is_touching_ground(tilemap):
-            self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
+            if self.velocity[1] > 0:
+                self.velocity[1] = round(min(5, self.velocity[1] + 0.15 * self.game.delta_time), 2)
+            else: self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
 
         # complex jump mechanic
         if stored_movement[1] != False:
@@ -229,7 +231,10 @@ class Projectile(PhysicsEntity):
     def update(self):
         super().update(self.game.tilemap)
 
-        self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
+        if self.velocity[1] > 0:
+            self.velocity[1] = round(min(5, self.velocity[1] + 0.15 * self.game.delta_time), 2)
+        else:self.velocity[1] = round(min(5, self.velocity[1] + 0.1 * self.game.delta_time), 2)
+        
 
         if self.velocity[1] > 0:
             self.falling = 1

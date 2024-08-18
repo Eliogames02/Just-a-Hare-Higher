@@ -25,6 +25,7 @@ class Editor:
         # assets setup
         self.assets = {
             'dirt': load_images('tiles/dirt'),
+            'empty_dirt': load_images('tiles/empty_dirt'),
             'collectible': load_images('tiles/collectible'),
             'spawner': load_images('tiles/spawners'),
         }
@@ -49,6 +50,8 @@ class Editor:
         self.clicking = False
         self.right_clicking = False
         self.shift = False
+        self.rotate = False
+        self.rotations = 0
         self.ongrid = True
 
     def run(self) -> None:
@@ -64,8 +67,14 @@ class Editor:
             self.tilemap.render(self.display, offset=render_scroll)
 
             # sets the current tile image to be displayed on the grid
-            current_tile_img = self.assets[self.tile_list[self.tile_group]][self.tile_variant].copy()
+            current_tile_img = py.transform.rotate(self.assets[self.tile_list[self.tile_group]][self.tile_variant].copy(), -90 * self.rotations)
             current_tile_img.set_alpha(100)
+
+            if self.rotate == True:
+                if self.rotations > 2:
+                    self.rotations = 0
+                else: self.rotations += 1
+                self.rotate = False
 
             # Get the mous position and tile position
             self.mouse_pos = py.mouse.get_pos()
@@ -80,7 +89,7 @@ class Editor:
 
             
             if self.clicking and self.ongrid:
-                self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (tile_pos[0], tile_pos[1])}
+                self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (tile_pos[0], tile_pos[1]), 'rotations': (self.rotations)}
             if self.right_clicking:
                 tile_location = str(tile_pos[0]) + ';' + str(tile_pos[1])
                 if tile_location in self.tilemap.tilemap and self.ongrid == True:
@@ -109,7 +118,7 @@ def event_handler(self) -> None:
             if event.button == 1:
                 self.clicking = True
                 if not self.ongrid:
-                    self.tilemap.offgrid_tiles.append({'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (self.mouse_pos[0] + self.scroll[0], self.mouse_pos[1] + self.scroll[1])})
+                    self.tilemap.offgrid_tiles.append({'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (self.mouse_pos[0] + self.scroll[0], self.mouse_pos[1] + self.scroll[1]), 'rotations': self.rotations})
             if event.button == 3:
                 self.right_clicking = True
             
@@ -152,6 +161,8 @@ def event_handler(self) -> None:
 
             if event.key == py.K_LSHIFT:
                 self.shift = True
+            if event.key == py.K_LCTRL:
+                self.rotate = True
 
             if event.key == py.K_o:
                 map_name = input('Enter level name -> ')

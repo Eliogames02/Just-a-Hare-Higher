@@ -3,7 +3,6 @@ import json
 
 NEIGHBOR_OFFSETS = [(-1, -1), (0, -1), (1, -1), (-1,0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
 PHYSICS_TILES = {'dirt'}
-#AUTOTILE_TILES = {'dirt'} autotiling isn't helpful here because the tiles srites aren't finished yet
 
 class Tilemap:
     def __init__(self, game, tile_size=16):
@@ -72,20 +71,10 @@ class Tilemap:
         if tile == None: return py.Rect(-1000, -1000, 1, 1) # THE NONE RECT IS REAL
         if tile['type'] in PHYSICS_TILES:
             return py.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size)
-    
-    #* Autotiling isn't helpful here because the tiles srites aren't finished yet
-    #def autotile(self):
-    #    for location in self.tilemap:
-    #        tile = self.tilemap[location]
-    #        neighbors = set()
-    #        for shift in [(1,0), (0,1), (-1,0), (0,-1)]:
-    #            check_location = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
-    #            if check_location in self.tilemap:
-    #                pass
 
     def render(self, surf, offset=(0, 0)):
         for tile in self.offgrid_tiles:
-            surf.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
+            surf.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
 
         for x in range(offset[0] // self.tile_size, (offset[0] + surf.get_width()) // self.tile_size + 1):
             for y in range(offset[1] // self.tile_size, (offset[1] + surf.get_height()) // self.tile_size + 1):
@@ -93,4 +82,4 @@ class Tilemap:
                 if location in self.tilemap:
                     tile = self.tilemap[location]
                     if tile['type'] != 'collectible' or str(type(self.game)) == "<class '__main__.Editor'>":
-                        surf.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                        surf.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
