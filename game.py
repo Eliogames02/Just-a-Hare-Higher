@@ -1,32 +1,25 @@
 import pygame as py
 import sys, time
-from scripts.entities import PhysicsEntity, Player, Collectible, Enemy, TickEnemy, DungEnemy
+from scripts.entities import *
+from scripts.tilemap import Tilemap
 from scripts.utils import load_image, load_images, Animation
 from scripts.clouds import Clouds
-from scripts.tilemap import Tilemap
+
 
 class Game:
-    def __init__(self) -> None:
-        # pygame setup
+    def __init__(self):
+        #* initialize pygame
         py.init()
-        
-        # window setup
-        py.display.set_caption('Just a Hare Higher')
-        self.screen = py.display.set_mode((1280, 960))
-        self.display = py.Surface((640, 480))
 
-        # clock/fps setup
+        #* create game window
+        py.display.set_caption("Just a Hare Higher")
+        self.screen = py.display.set_mode((py.display.get_desktop_sizes()[0][0], py.display.get_desktop_sizes()[0][1] - 32))
+        self.display = py.Surface((640, 360))
+
+        #* create game clock
         self.clock = py.time.Clock()
-        self.delta_time = 0
-        self.prev_time = time.time() 
 
-        # font setup
-        self.default_font = py.font.SysFont("Time New Roman", 24)
-
-        self.movement = [False, False]
-        self.move_speed = 3
-        self.stored_movement = [False, False]
-
+        #* assets of the game
         self.assets = {
             'player': load_image('entities/player/player_test.png'),
             'dirt': load_images('tiles/dirt'),
@@ -36,43 +29,47 @@ class Game:
             'collectible/carrot': Animation(load_images('tiles/collectible/carrot')),
             'collectible/radish': Animation(load_images('tiles/collectible/radish')),
             'player/idle': Animation(load_images('entities/player')),
-            'tick_enemy/test': Animation(load_images('entities/tick_enemy')),
-            'dung_enemy/test': Animation(load_images('entities/dung_enemy')),
-            'projectile/poop': Animation(load_images('entities/projectiles')),
+            'tick_enemy/idle': Animation(load_images('entities/tick_enemy')),
+            'dung_enemy/idle': Animation(load_images('entities/dung_enemy')),
+            'projectile/idle': Animation(load_images('entities/projectiles')),
         }
 
-        #tilemap
-        self.tilemap = Tilemap(self, tile_size=16)
-
-        #clouds
+        #* Assemble the level
+        self.tilemap = Tilemap(self)
         self.clouds = Clouds(self.assets['clouds'])
-
-        # player
-        self.player = Player(self, (160, 200), (16, 16))
-        
-        # loads the level data
+        self.player = Player(self, (100, 200), (16, 16))
         self.load_level()
-
-        # camera positioning
         self.scroll = [self.player.pos[0] - self.display.get_width()/2, self.player.pos[1] - self.display.get_height()/2]
 
-    # Gameloop
-    def run(self) -> None:
-        while True:
-            self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0,0))
+        #* Player variables
+        global jump, jump_time
+        jump = False
+        jump_time = 0
+        self.move_speed = 2
 
-            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() /2 - self.scroll[0]) / 30 * self.delta_time
-            self.scroll[1] += (self.player.rect().centery - self.display.get_height() /2 - self.scroll[1]) / 12 * self.delta_time
+        #* Score variables
+        self.score = 0 # for carrots
+        self.super_score = 0 # for radishes
+
+    #* game loop
+    def run(self) -> None:
+        global jump, jump_time
+
+        while True:
+            self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0, 0))
+
+            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() /2 - self.scroll[0]) / 30
+            self.scroll[1] += (self.player.rect().centery - self.display.get_height() /2 - self.scroll[1]) / 12
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
-            self.clouds.update(self.delta_time)
+            self.clouds.update()
             self.clouds.render(self.display, offset=render_scroll)
  
             self.tilemap.render(self.display, offset=render_scroll)
 
-            self.player.update(((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
+            self.player.update()
             self.player.render(self.display, offset=render_scroll)
-            self.player.update(((self.movement[1] - self.movement[0]) * self.move_speed, 0), (0, self.stored_movement[1]))
+            self.player.update()
 
             for collectible in self.collectibles:
                 collectible.update()
@@ -81,7 +78,7 @@ class Game:
             for enemy in self.enemies:
                 enemy.update()
                 enemy.render(self.display, offset=render_scroll)
-            
+
             self.projectiles_to_delete = []
             for projectile in self.projectiles.values():
                 projectile.update()
@@ -92,73 +89,70 @@ class Game:
                 del self.projectiles[projectile]
             self.projectiles_to_delete.clear()
 
-            self.event_handler() 
-    
-            self.screen.blit(py.transform.scale(self.display, self.screen.get_size()), (0, 0))
-            self.update_screen()
+            #* handle events
+            self.events()
 
-# Handles all events and inputs
-    def event_handler(self) -> None:
-        # Checks if any event happens then executes code.
+            if jump == True:
+                jump_time = min(10, max(4, jump_time + 1/20))
+
+            #* update the window
+            self.screen.blit(py.transform.scale(self.display, self.screen.get_size()), (0, 0))
+            py.display.flip()
+            self.clock.tick(60) # limit FPS to 60 per second
+        
+    def events(self) -> None:
+        global jump, jump_time
+
         for event in py.event.get():
-            # Exits the program
             if event.type == py.QUIT:
                 self.exit_game()
 
             if event.type == py.KEYDOWN:
                 if event.key == py.K_ESCAPE:
                     self.exit_game()
-                if event.key == py.K_TAB:
-                    pass # pull up the inventory/pause menu - The number of collectibles should be shown here, the main menu should be accessible through a button and the player shouldn't be able to move the character
-
                 if event.key == py.K_LEFT or event.key == py.K_a:
-                    self.movement[0] = True
+                    # move player left 
+                    self.player.velocity[0] -= self.move_speed
                 if event.key == py.K_RIGHT or event.key == py.K_d:
-                    self.movement[1] = True
-
-                if event.key == py.K_w or event.key == py.K_UP:
-                    self.stored_movement[1] = True
+                    # move player right
+                    self.player.velocity[0] += self.move_speed
+                if event.key == py.K_UP or event.key == py.K_w:
+                    # start charging the player's jump
+                    jump = True
 
             if event.type == py.KEYUP:
                 if event.key == py.K_LEFT or event.key == py.K_a:
-                    self.movement[0] = False
+                    # stop moving player left
+                    self.player.velocity[0] += self.move_speed
                 if event.key == py.K_RIGHT or event.key == py.K_d:
-                    self.movement[1] = False
+                    # stop moving player right
+                    self.player.velocity[0] -= self.move_speed
                 if event.key == py.K_UP or event.key == py.K_w:
-                    self.stored_movement[1] = False
+                    # make the player jump
+                    if self.player.jumps > 0:
+                        self.player.velocity[1] -= (jump_time)
+                    jump_time = 0
+                    jump = False
 
-# Handles updating the screen and fps
-    def update_screen(self) -> None:
-        py.display.flip()
-        self.clock.tick(60) # limit FPS to 60 per second
-        # compute delta time
-        now = time.time()
-        self.delta_time = (now - self.prev_time) * 60
-        self.prev_time = now
-
-    # Exits the game
-    def exit_game(self) -> None:
-        py.quit()
-        sys.exit()
-
-    def load_level(self, map_id=0):
+    def load_level(self, map_id=0) -> None:
         try:
             self.tilemap.load(f'data/maps/{map_id}.json')
         except FileNotFoundError:
             print("Could not find the Level File(hint: it's a json file)")
             self.exit_game()
         
-        # creates list to hold all projectiles
+        #* creates list to hold all projectiles
         self.projectiles = {}
         self.projectiles_id = []
 
-        # collectibles
+        #* collectibles
         self.collectibles = []
         for collectible in self.tilemap.extract([('collectible', 0), ('collectible', 1)]):
             if collectible['variant'] == 0:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16)))
             else: self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 1))
         
+        #* enemies
         self.enemies = []
         self.enemies_id = []
         for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2)]):
@@ -168,5 +162,10 @@ class Game:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
             else: self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
     
+    def exit_game(self) -> None:
+        print(f"Thanks for playing!\n\nCarrots Collected: {self.score}\nRadishes Collected: {self.super_score}")
+        py.quit()
+        sys.exit()
+
 game = Game()
 game.run()

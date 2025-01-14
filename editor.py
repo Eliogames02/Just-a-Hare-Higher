@@ -3,7 +3,7 @@ import sys
 from scripts.utils import load_image, load_images
 from scripts.tilemap import Tilemap
 
-RENDER_SCALE = 2.0
+RENDER_SCALE = 3.0
 
 class Editor:
     def __init__(self) -> None:
@@ -12,8 +12,8 @@ class Editor:
         
         # window setup
         py.display.set_caption('editor')
-        self.screen = py.display.set_mode((1280, 960))
-        self.display = py.Surface((640, 480))
+        self.screen = py.display.set_mode((py.display.get_desktop_sizes()[0][0], py.display.get_desktop_sizes()[0][1] - 32))
+        self.display = py.Surface((640, 360))
         map_name = ''
 
         # clock/fps setup
@@ -38,7 +38,7 @@ class Editor:
         try:
             self.tilemap.load(f'data/maps/0.json')
         except FileNotFoundError:
-            pass
+            print("Could not find the Level File(hint: it's a json file)")
 
         #camera setup
         self.scroll = [0, 0]
