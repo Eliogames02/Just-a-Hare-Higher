@@ -1,5 +1,5 @@
 import pygame as py
-import sys, time
+import sys, time, json
 from scripts.entities import *
 from scripts.tilemap import Tilemap
 from scripts.utils import load_image, load_images, Animation
@@ -8,19 +8,43 @@ from scripts.clouds import Clouds
 
 class Game:
     def __init__(self):
-        #* initialize pygame
+        """
+        Initializes the Game class, setting up the pygame environment and creating a game window, clock, and assets.
+
+        This constructor initializes the pygame library, sets up the display window and title, prepares the clock for frame rate control,
+        and initializes game assets such as images for clouds and the background. It also sets up the game volume, font for rendering text,
+        and main menu surface. Additionally, it initializes the game's loop states and sets up the levels dictionary.
+
+        Attributes:
+            screen (pygame.Surface): The main display surface for the game.
+            display (pygame.Surface): A secondary surface for rendering the game's content.
+            scale (int): The scale factor for the game window.
+            clock (pygame.time.Clock): Used to control the frame rate of the game.
+            assets (dict): A dictionary containing loaded images for clouds and the background.
+            clouds (Clouds): The clouds instance used in the game.
+            volume (int): The game's current volume.
+            title_text (pygame.font.Font): The font used for rendering title text.
+            text (pygame.font.Font): The font used for rendering normal text.
+            number_text (pygame.font.Font): The font used for rendering large numbers.
+            main_menu (pygame.Surface): The main menu surface.
+            title_screen_loop (bool): A flag indicating if the title screen is to be displayed.
+            level_loop (bool): A flag indicating if the level is to be displayed.
+            settings_loop (bool): A flag indicating if the settings menu is to be displayed.
+            win_screen_loop (bool): A flag indicating if the win screen is to be displayed.
+            current_level (int): The current level being played.
+            levels (dict): A dictionary containing the levels and their completion status.
+        """
         py.init()
 
-        #* create game window
+        # create game window
         py.display.set_caption("Just a Hare Higher")
         self.screen = py.display.set_mode((1920, 1080))
         self.display = py.Surface((640, 360))
         self.scale = 3
 
-        #* create game clock
         self.clock = py.time.Clock()
 
-        #* Main Menu Setup
+        # Main Menu Setup
         self.assets = {
             'clouds': load_images('clouds'),
             'background': load_image('Background.png'),
@@ -41,22 +65,24 @@ class Game:
         self.settings_loop = False 
         self.win_screen_loop = False
 
+        self.current_level = 1
+        self.levels = {0: {'Completed': True}}
 
     def run_menu(self):
         """
-        This function runs the main menu loop of the game. It handles rendering the
-        main menu and the menu events.
-
-        The main menu is rendered by first drawing the background so we don't have an
-        abyss. Then it renders the clouds and the menu. The menu is rendered as a
-        rectangle with rounded corners. The currently selected button(rectangle) is highlighted differently
-        than the other buttons.
-
-        The menu events are handled by the menu_events function.
-
-        The main menu loop limits the frame rate to 60 frames per second and updates
-        the window at the end of each frame.
+        The main menu loop for the game. This function is responsible for drawing the title screen, checking for events,
+        and updating the game window. It also loads the levels and their completion status, and sets up the main menu surface.
+        
+        Attributes:
+            main_menu (pygame.Surface): The main menu surface.
+            menu_rect (tuple): The rectangle coordinates for the main menu.
+            menu_radius (int): The radius of the main menu.
+            rects (dict): A dictionary containing the rectangles for the level "buttons" and the settings and exit "buttons".
         """
+        for i in range(1, 6):
+            self.load(i)
+        self.high_scores = {1: self.levels[1]['Score'], 2: self.levels[2]['Score'], 3: self.levels[3]['Score'], 4: self.levels[4]['Score'], 5: self.levels[5]['Score']}
+        
         while self.title_screen_loop:
             
             # draw background so we don't have an abyss
@@ -77,6 +103,7 @@ class Game:
                     5: py.Rect((self.menu_rect[0] + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
                     6: py.Rect((self.menu_rect[0] + 15 + 161 + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
                     7: py.Rect((self.menu_rect[0] + 15*2 + 161*2 + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
+                    'wipe': py.Rect((self.menu_rect[0] + 342)*self.scale, (self.menu_rect[1] + 3)*self.scale, 150*self.scale, 47*self.scale)
                     }
             
             # draw the background of the menu
@@ -88,16 +115,21 @@ class Game:
             for i in range(5):
                 py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 0, 25)
                 py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 2, 25)
-        
+                if self.levels[i]['Completed'] == False:
+                    py.draw.line(self.display, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 15 + 94), 2)
+                    py.draw.line(self.display, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 15), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15 + 94), 2)
             # draw the text for the level "buttons"
             for i in range(5):
                 self.main_menu.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 28)))
-            
+
+            for i in range(5):
+                self.main_menu.blit(py.font.Font.render(self.text, str(self.high_scores[i+1]), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 20, self.menu_rect[1] + self.menu_radius + 83)))
+
             # draw the current level "button" differently
             if py.Rect((self.menu_rect[0] + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 530*self.scale, 94*self.scale).collidepoint(py.mouse.get_pos()):
                 # draw the menu "buttons"
                 for i in range(5):
-                    if self.rects[i].collidepoint(py.mouse.get_pos()):
+                    if self.rects[i].collidepoint(py.mouse.get_pos()) and self.levels[i]['Completed'] == True:
                         py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 0, 25)
                         py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 2, 25)
             
@@ -139,7 +171,16 @@ class Game:
             self.clock.tick(60) # limit FPS to 60 per second
         
     def menu_events(self):
+        """
+        Handles all events while in the main menu or settings menu.
 
+        Events that are handled include the player clicking on the different
+        options in the main menu, the player adjusting the volume in the settings
+        menu, the player adjusting the screen resolution in the settings menu, and
+        the player exiting to the main menu from the settings menu or the win
+        screen.
+
+        """
         for event in py.event.get():
             if event.type == py.QUIT:
                 self.exit_game()
@@ -151,13 +192,13 @@ class Game:
             if event.type == py.MOUSEBUTTONDOWN and (self.settings_loop == False and self.win_screen_loop == False):
                 if self.rects[0].collidepoint(py.mouse.get_pos()):
                     self.setup_level(1)
-                if self.rects[1].collidepoint(py.mouse.get_pos()):
+                if self.rects[1].collidepoint(py.mouse.get_pos()) and self.levels[1]['Completed'] == True:
                     self.setup_level(2)
-                if self.rects[2].collidepoint(py.mouse.get_pos()):
+                if self.rects[2].collidepoint(py.mouse.get_pos()) and self.levels[2]['Completed'] == True:
                     self.setup_level(3)
-                if self.rects[3].collidepoint(py.mouse.get_pos()):
+                if self.rects[3].collidepoint(py.mouse.get_pos()) and self.levels[3]['Completed'] == True:
                     self.setup_level(4)
-                if self.rects[4].collidepoint(py.mouse.get_pos()):
+                if self.rects[4].collidepoint(py.mouse.get_pos()) and self.levels[4]['Completed'] == True:
                     self.setup_level(5)
                 if self.rects['settings'].collidepoint(py.mouse.get_pos()):
                     self.settings_menu()
@@ -181,27 +222,20 @@ class Game:
                     py.mixer.music.set_volume(self.volume)
                 if self.rects['exit'].collidepoint(py.mouse.get_pos()):
                     self.title_screen_loop = True
+                if self.rects['wipe'].collidepoint(py.mouse.get_pos()):
+                    self.wipe_data()
 
             if event.type == py.MOUSEBUTTONDOWN and self.win_screen_loop == True:
                 if self.rects['exit'].collidepoint(py.mouse.get_pos()):
                     self.title_screen_loop = True
                     
-
     def settings_menu(self):
         """
-        This function runs the settings menu loop of the game. It handles rendering the
-        settings menu and its events.
+        Handles all events while in the settings menu.
 
-        The settings menu is rendered by first drawing the background and clouds, then
-        drawing the menu with options for screen resolution, volume control, and
-        returning to the main menu.
-
-        The settings menu events are handled by the menu_events function, allowing the
-        user to interact with the options. The display is updated at the end of each
-        frame to show any changes.
-
-        The loop continues until the user decides to return to the main menu, at which
-        point it calls run_menu to transition back.
+        Events that are handled include the player changing the screen
+        resolution, the player adjusting the volume, the player exiting to the
+        main menu, and the player wiping all save data.
         """
         self.title_screen_loop = False
         self.settings_loop = True
@@ -224,6 +258,7 @@ class Game:
                     5: py.Rect((self.menu_rect[0] + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
                     6: py.Rect((self.menu_rect[0] + 15 + 161 + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
                     7: py.Rect((self.menu_rect[0] + 15*2 + 161*2 + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 161*self.scale, 94*self.scale),
+                    'wipe': py.Rect((self.menu_rect[0] + 342)*self.scale, (self.menu_rect[1] + 3)*self.scale, 150*self.scale, 47*self.scale)
                     }
             
             # draw the background of the menu
@@ -251,6 +286,14 @@ class Game:
                 py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + 15, self.menu_rect[1] + self.menu_radius + 124, 203, 94), 0, 25)
                 py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + 15, self.menu_rect[1] + self.menu_radius + 124, 203, 94), 2, 25)
 
+            # draw the wipe data button
+            py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 0, 25)
+            py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 2, 25)
+            self.main_menu.blit(py.font.Font.render(self.text, 'Wipe Data', True, (0, 0, 0, 150)), ((self.menu_rect[0] + 365, self.menu_rect[1] +10)))
+            if py.Rect((self.menu_rect[0] + 342)*self.scale, (self.menu_rect[1] + 3)*self.scale, 150*self.scale, 47*self.scale).collidepoint(py.mouse.get_pos()):
+                py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 0, 25)
+                py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 2, 25)
+            
             # draw the return to main menu "button"
             py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + 342, self.menu_rect[1] + self.menu_radius + 124, 203, 94), 0, 25)
             py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + 342, self.menu_rect[1] + self.menu_radius + 124, 203, 94), 2, 25)
@@ -273,6 +316,16 @@ class Game:
             self.clock.tick(60) # limit FPS to 60 per second
 
     def setup_level(self, level: int) -> None:
+        """
+        Sets up the game for a level.
+
+        This function sets up the game state to begin a new level. This includes loading
+        the assets, assembling the level, setting up the player and camera, and initializing
+        scores and other game variables.
+
+        Parameters:
+            level (int): The level number to load.
+        """
         self.title_screen_loop = False
         self.level_loop = True
         
@@ -281,6 +334,7 @@ class Game:
             'player': load_image('entities/player/player_test.png'),
             'dirt': load_images('tiles/dirt'),
             'empty_dirt': load_images('tiles/empty_dirt'),
+            'air': load_images('tiles/air'),
             'clouds': load_images('clouds'),
             'background': load_image('Background.png'),
             'collectible/carrot': Animation(load_images('tiles/collectible/carrot')),
@@ -311,9 +365,28 @@ class Game:
 
         self.run_level()
 
-    #* game loop
     def run_level(self) -> None:
+        """
+        Runs the main game loop for a level.
+
+        This function handles updating and rendering game entities such as the player,
+        enemies, and collectibles, as well as managing the player's input and jump mechanics.
+        It continuously refreshes the display and updates the game state while the level
+        is active. The function also draws a jump power gauge to visually indicate the player's
+        jump charge level.
+
+        Global Variables:
+            jump (bool): A flag indicating if the jump is being charged.
+            jump_time (float): The duration for which the jump has been charged.
+
+        Attributes:
+            game_overlay (pygame.Surface): An overlay surface for rendering UI elements like the jump gauge.
+            scroll (list): The camera's scrolling offset, dynamically adjusted based on the player's position.
+        """
+
         global jump, jump_time
+
+        self.game_overlay = py.Surface((640, 360), py.SRCALPHA)
 
         while self.level_loop:
             self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0, 0))
@@ -352,7 +425,23 @@ class Game:
             self.player_input() # handles player inputs
 
             if jump == True:
-                jump_time = min(10, max(4, jump_time + 1/20))
+                jump_time = min(10, round(max(4, jump_time + 1/20), 2))
+            
+            # Draw Jump Power Gauge
+            self.game_overlay.blit(py.font.Font.render(self.text, "Jump Power", False, (0, 0, 0)), (25, 5))
+            py.draw.rect(self.game_overlay, (150, 150, 150, 150), (15, 35, 200, 30), 0, 15) 
+            py.draw.circle(self.game_overlay, (150, 0, 0, 150), (30, 50), 15, 0)
+            
+            if 4 < jump_time:
+                py.draw.rect(self.game_overlay, (150, 0, 0, 150), (27, 35, 190*(jump_time - 4)*1/6-3, 30), 0, 15)
+            if 6 < jump_time:
+                py.draw.rect(self.game_overlay, (150, 150, 0, 150), (27+64, 35, 190*(jump_time - 6)*1/6-3, 30), 0, 15)
+            if 8 < jump_time:
+                py.draw.rect(self.game_overlay, (0, 150, 0, 150), (27+128, 35, 190*(jump_time - 8)*1/6-4, 30), 0, 15)
+            
+            py.draw.rect(self.game_overlay, (0, 0, 0, 150), (15, 35, 200, 30), 2, 15)
+
+            self.display.blit(self.game_overlay, (0,0))
 
             # updates the window
             self.screen.blit(py.transform.scale(self.display, self.screen.get_size()), (0, 0))
@@ -360,6 +449,32 @@ class Game:
             self.clock.tick(60) # limit FPS to 60 per second
         
     def player_input(self) -> None:
+        """
+        Handles player input events and updates player state accordingly.
+
+        This function processes input events for controlling the player character.
+        It updates the player's velocity and jump state based on keyboard inputs,
+        such as moving left or right and charging or executing a jump. The function
+        also handles exiting the game and ending the level.
+
+        Global Variables:
+            jump (bool): A flag indicating if the jump is being charged.
+            jump_time (float): The duration for which the jump has been charged.
+
+        Handles the following events:
+            - QUIT: Exits the game.
+            - KEYDOWN:
+                - ESCAPE: Exits the game.
+                - LEFT/A: Moves the player left.
+                - RIGHT/D: Moves the player right.
+                - UP/W: Starts charging the player's jump.
+                - M: Ends the current level.
+            - KEYUP:
+                - LEFT/A: Stops moving the player left.
+                - RIGHT/D: Stops moving the player right.
+                - UP/W: Executes the player's jump if possible.
+        """
+
         global jump, jump_time
 
         for event in py.event.get():
@@ -396,11 +511,28 @@ class Game:
                     jump = False
 
     def load_level(self, map_id=0) -> None:
+        """
+        Loads a level from a JSON file and initializes all level entities.
+
+        Loads a level from a JSON file and sets up all level entities such as the player, collectibles, and enemies.
+        It also initializes the game's projectile list and sets the current level ID.
+
+        Global Variables:
+            projectiles (dict): A dictionary containing all projectiles in the game, keyed by ID.
+            projectiles_id (list): A list of all projectile IDs.
+
+        Attributes:
+            collectibles (list): A list of all collectibles in the level.
+            enemies (list): A list of all enemies in the level.
+            current_level (int): The ID of the currently loaded level.
+        """
         try:
             self.tilemap.load(f'data/maps/{map_id}.json')
         except FileNotFoundError:
             print("Could not find the Level File(hint: it's a json file)")
             self.exit_game()
+
+        self.current_level = map_id
         
         #* creates list to hold all projectiles
         self.projectiles = {}
@@ -411,9 +543,13 @@ class Game:
         for collectible in self.tilemap.extract([('collectible', 0), ('collectible', 1), ('collectible', 2)]):
             if collectible['variant'] == 0:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16)))
+                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
             elif collectible['variant'] == 1:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 1))
-            else: self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 2))
+                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
+            else: 
+                self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 2))
+                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
         
         #* enemies
         self.enemies = []
@@ -421,6 +557,7 @@ class Game:
         for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
+                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
             elif spawner['variant'] == 1:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
             else: self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
@@ -441,6 +578,8 @@ class Game:
         self.run_menu()
     
     def win_menu(self):
+        self.save(self.current_level)
+
         while self.win_screen_loop:
             
             self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0, 0))
@@ -497,16 +636,64 @@ class Game:
         """
         Exits the game cleanly.
 
-        Prints out the player's score to the console and then closes the pygame window and exits the game.
+        Closes the pygame window and exits the game.
 
         :return: None
         """
-        try:
-            print(f"Thanks for playing!\n\nCarrots Collected: {self.score}\nRadishes Collected: {self.super_score}")
-        except AttributeError:
-            pass
         py.quit()
         sys.exit()
 
-game = Game()
-game.run_menu()
+    def __str__(self) -> str:
+        return "Game"
+
+    def load(self, file) -> None:
+        """
+        Loads the save data for the given level from the save file.
+
+        This function is used to load the save data from the save file, and
+        updates the Game's levels dictionary with the loaded data.
+
+        :param file: the number of the save file to load from
+        :return: None
+        """
+        with open(f'data/save_data/save{file}.json', 'r') as f:
+            save_data = json.load(f)
+        self.levels[save_data['Level']] = {'Completed': save_data['Completed'], 'Carrots': save_data['Carrots'], 'Radishes': save_data['Radishes'], 'Score': save_data['Score'], 'Completion': save_data['Completion']}
+        
+    def save(self, file) -> None:
+        """
+        Saves the game data to a file.
+
+        This function is used to save the game data to a file. It
+        is called when the player completes a level or when the
+        game is exited. The function checks if the current score is
+        higher than the high score for the given level, and if so,
+        it updates the high score. Then it saves the game data to
+        the file.
+
+        :param file: the number of the save file to save to
+        :return: None
+        """
+        if self.score*10 + self.super_score*100 > self.high_scores[file]:
+            self.high_scores[file] = self.score*10 + self.super_score*100
+        with open(f'data/save_data/save{file}.json', 'w') as f:
+            json.dump({"Level": self.current_level, "Completed": True, "Carrots": self.score, "Radishes": self.super_score, "Score": self.high_scores[file], "Completion": str(round((self.score*10 + self.super_score*100)*0.07692307692, 3))+"%"}, f)
+    
+    def wipe_data(self) -> None:
+        """
+        Wipes all save data from the save files.
+
+        This function is used to completely clear all save data from the
+        save files. It is called when the player chooses to reset the
+        game data from the settings menu.
+
+        :return: None
+        """
+        for i in range(1, 6):
+            with open(f'data/save_data/save{i}.json', 'w') as f:
+                json.dump({"Level": i, "Completed": False, "Carrots": 0, "Radishes": 0, "Score": 0, "Completion": "0%"}, f)
+
+
+if __name__ == "__main__":
+    game = Game()
+    game.run_menu()

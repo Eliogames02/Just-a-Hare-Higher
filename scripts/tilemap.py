@@ -2,7 +2,7 @@ import pygame as py
 import json
 
 NEIGHBOR_OFFSETS = [(-1, -1), (0, -1), (1, -1), (-1,0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
-PHYSICS_TILES = {'dirt'}
+PHYSICS_TILES = {'dirt', 'air'}
 
 class Tilemap:
     def __init__(self, game, tile_size=16):
@@ -17,13 +17,13 @@ class Tilemap:
             game: The game instance to which this tilemap belongs.
             tile_size (int): The size of each tile.
             tilemap (dict): A dictionary storing the on-grid tiles.
-            offgrid_tiles (dict): A dictionary storing the off-grid tiles.
+            offgrid_tiles (list): A list storing the off-grid tiles.
         """
 
         self.game = game
         self.tile_size = tile_size
         self.tilemap = {}
-        self.offgrid_tiles = {}
+        self.offgrid_tiles = []
 
     def extract(self, id_pairs:list, keep=False):
         """
@@ -57,11 +57,17 @@ class Tilemap:
 
     def render(self, surface, offset=(0, 0)):
         """
-        Renders the tilemap to the given surface at the given offset.
+        Renders the tiles onto the given surface, applying an offset for scrolling.
+
+        This function iterates through both off-grid and on-grid tiles, drawing each tile
+        onto the provided surface. Off-grid tiles are rendered directly at their specified
+        positions, while on-grid tiles are rendered based on the visible region determined
+        by the surface size and the provided offset. 
 
         Args:
-            surface (pygame.Surface): The surface to render the tilemap to.
-            offset (tuple): The offset from the top left corner of the surface to render the tilemap at, given as a tuple of (x, y) coordinates.
+            surface (pygame.Surface): The surface to render the tiles onto.
+            offset (tuple, optional): The offset used to adjust the tile positions for
+                                    scrolling, given as (x, y) coordinates.
         """
         for tile in self.offgrid_tiles:
             surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
@@ -71,7 +77,10 @@ class Tilemap:
                 location = str(x) + ';' + str(y)
                 if location in self.tilemap:
                     tile = self.tilemap[location]
-                    surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                    if tile['type'] == 'air' and self.game.__str__() == "Game": 
+                        surface.blit(py.transform.rotate(self.game.assets['empty_dirt'][0], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                    else: 
+                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
 
     def tiles_around(self, pos):
         """
@@ -142,7 +151,8 @@ class Tilemap:
         if tile == None: return py.Rect(-1000, -1000, 1, 1) #! THE NULL RECT IS REAL
         if tile['type'] in PHYSICS_TILES:
             return py.Rect(tile['pos'][0] * self.tile_size, tile['pos'][1] * self.tile_size, self.tile_size, self.tile_size)
-        
+        return py.Rect(-1000, -1000, 1, 1) #! THE NULL RECT IS REAL
+
     def save(self, path):
         """
         Saves the current tilemap to the given path as a json file.

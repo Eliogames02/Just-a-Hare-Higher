@@ -42,9 +42,9 @@ class Editor:
         
         # window setup
         py.display.set_caption('editor')
-        self.screen = py.display.set_mode((py.display.get_desktop_sizes()[0][0], py.display.get_desktop_sizes()[0][1] - 32))
+        self.screen = py.display.set_mode((1920, 1080))
         self.display = py.Surface((640, 360))
-        map_name = '0'
+        map_name = '2'
 
         # clock/fps setup
         self.clock = py.time.Clock()
@@ -55,6 +55,7 @@ class Editor:
             'empty_dirt': load_images('tiles/empty_dirt'),
             'collectible': load_images('tiles/collectible'),
             'spawner': load_images('tiles/spawners'),
+            'air': load_images('tiles/air'),
         }
 
         # scroll movement setup
@@ -145,6 +146,9 @@ class Editor:
     
             self.screen.blit(py.transform.scale(self.display, self.screen.get_size()), (0, 0))
             update_screen(self.clock)
+
+    def __str__(self) -> str:
+        return "Editor"
 
 # Handles all events and inputs
 def event_handler(self) -> None:
