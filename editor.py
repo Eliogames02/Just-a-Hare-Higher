@@ -7,20 +7,47 @@ RENDER_SCALE = 3.0
 
 class Editor:
     def __init__(self) -> None:
-        # pygame setup
+        """
+        Initializes the Editor class, setting up the required components for the
+        tilemap editor, including pygame, window, clock, assets, and the tilemap.
+
+        This constructor initializes the pygame library, sets up the display window
+        and title, prepares the clock for frame rate control,
+        and initializes game assets such as images for different tile types. It also
+        sets up basic editor functionality such as scrolling movement, tilemap
+        management, camera control, and interaction states like clicking and
+        rotating.
+
+        Attributes:
+            screen (pygame.Surface): The main display surface for the editor.
+            display (pygame.Surface): A secondary surface for rendering the editor's content.
+            map_name (str): The name of the level being edited.
+            clock (pygame.time.Clock): Used to control the frame rate of the editor.
+            default_font (pygame.font.Font): The default font for rendering text.
+            assets (dict): A dictionary containing loaded images for different tile types.
+            movement (list): A list indicating the direction of scroll movement.
+            tilemap (Tilemap): The tilemap instance used in the editor.
+            scroll (list): The camera's scrolling offset.
+            tile_list (list): A list of tile types available in the editor.
+            tile_group (int): The index of the currently selected tile group.
+            tile_variant (int): The index of the currently selected tile variant.
+            clicking (bool): A flag indicating if the left mouse button is being pressed.
+            right_clicking (bool): A flag indicating if the right mouse button is being pressed.
+            shift (bool): A flag indicating if the shift key is held down. Used to switch current tile variant.
+            rotate (bool): A flag indicating if the current tile is to be rotated.
+            rotations (int): The number of rotations applied to the current tile.
+            ongrid (bool): A flag indicating if the tile placement is aligned to the grid.
+        """
         py.init()
         
         # window setup
         py.display.set_caption('editor')
         self.screen = py.display.set_mode((py.display.get_desktop_sizes()[0][0], py.display.get_desktop_sizes()[0][1] - 32))
         self.display = py.Surface((640, 360))
-        map_name = ''
+        map_name = '0'
 
         # clock/fps setup
         self.clock = py.time.Clock()
-
-        # font setup
-        self.default_font = py.font.SysFont("Time New Roman", 24)
 
         # assets setup
         self.assets = {
@@ -36,7 +63,7 @@ class Editor:
         #tilemap
         self.tilemap = Tilemap(self, tile_size=16)
         try:
-            self.tilemap.load(f'data/maps/0.json')
+            self.tilemap.load(f'data/maps/{map_name}.json')
         except FileNotFoundError:
             print("Could not find the Level File(hint: it's a json file)")
 
@@ -55,6 +82,20 @@ class Editor:
         self.ongrid = True
 
     def run(self) -> None:
+        """
+        Runs the editor's main loop, responsible for rendering the tilemap, handling
+        scroll movement, and updating the display.
+
+        This function is responsible for rendering the tilemap and taking into account
+        the scroll offset, setting the current tile image to be displayed on the grid,
+        getting the mouse position and tile position, and displaying the current tile
+        on the grid or off the grid. It also handles placing and deleting tiles by
+        checking if the left mouse button is being pressed and if the tile is on the
+        grid. If the right mouse button is being pressed, it deletes the tile at the
+        mouse position.
+
+        :return: None
+        """
         while True:
             self.display.fill((0, 0, 0))
 
@@ -108,6 +149,25 @@ class Editor:
 # Handles all events and inputs
 def event_handler(self) -> None:
     # Checks if any event happens then executes code.
+    """
+    Handles all events and inputs for the editor.
+
+    This function processes various event types such as quitting the program, 
+    mouse button actions, and keyboard inputs. It updates the editor's state 
+    based on these events, including toggling the grid, rotating tiles, saving 
+    maps, and handling movement.
+
+    Mouse Events:
+        - MOUSEBUTTONDOWN: Starts clicking or right-clicking actions, adds tiles 
+          to on and off-grid, and scrolls through tile variants and groups.
+        - MOUSEBUTTONUP: Stops clicking or right-clicking actions.
+
+    Keyboard Events:
+        - KEYDOWN: Handles quitting, movement directions, toggling grid, saving 
+          maps, and tile rotations.
+        - KEYUP: Stops movement actions and sets shift state to False.
+    """
+
     for event in py.event.get():
         # Exits the program
         if event.type == py.QUIT:
@@ -186,10 +246,25 @@ def event_handler(self) -> None:
 
 # Handles updating the screen and fps
 def update_screen(clock) -> None:
+    """
+    Updates the screen and controls the frame rate.
+
+    This function updates the entire pygame display window and limits the game to 60 frames per second.
+
+    :param clock: A pygame.time.Clock object used to control the frame rate.
+    :return: None
+    """
     py.display.flip()
     clock.tick(60)
 # Exits the game
 def exit_game() -> None:
+    """
+    Exits the game cleanly.
+
+    Prints out the player's score to the console and then closes the pygame window and exits the game.
+
+    :return: None
+    """
     py.quit()
     sys.exit()
     

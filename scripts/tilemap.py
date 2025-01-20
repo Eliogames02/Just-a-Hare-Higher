@@ -6,6 +6,20 @@ PHYSICS_TILES = {'dirt'}
 
 class Tilemap:
     def __init__(self, game, tile_size=16):
+        """
+        Initializes a Tilemap instance.
+
+        Args:
+            game: The game instance to which this tilemap belongs.
+            tile_size (int, optional): The size of each tile. Defaults to 16.
+
+        Attributes:
+            game: The game instance to which this tilemap belongs.
+            tile_size (int): The size of each tile.
+            tilemap (dict): A dictionary storing the on-grid tiles.
+            offgrid_tiles (dict): A dictionary storing the off-grid tiles.
+        """
+
         self.game = game
         self.tile_size = tile_size
         self.tilemap = {}

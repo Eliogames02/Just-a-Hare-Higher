@@ -38,6 +38,21 @@ def load_images(path):
 
 class Animation:
     def __init__(self, images, img_dur=5, loop=True):
+        """
+        Initializes an Animation instance with the given parameters.
+
+        Args:
+            images (list): A list of pygame.Surface objects to be displayed in sequence.
+            img_dur (int, optional): The duration in frames of each image in the animation. Defaults to 5.
+            loop (bool, optional): Whether the animation should loop after reaching the end of the list. Defaults to True.
+
+        Attributes:
+            images (list): The list of pygame.Surface objects to be displayed in sequence.
+            img_duration (int): The duration in frames of each image in the animation.
+            loop (bool): Whether the animation should loop after reaching the end of the list.
+            done (bool): Whether the animation is finished.
+            frame (int): The current frame of the animation.
+        """
         self.images = images
         self.loop = loop
         self.img_duration = img_dur
