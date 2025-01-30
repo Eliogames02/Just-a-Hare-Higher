@@ -77,10 +77,7 @@ class Tilemap:
                 location = str(x) + ';' + str(y)
                 if location in self.tilemap:
                     tile = self.tilemap[location]
-                    if tile['type'] == 'air' and self.game.__str__() == "Game": 
-                        surface.blit(py.transform.rotate(self.game.assets['empty_dirt'][0], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
-                    else: 
-                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                    surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
 
     def tiles_around(self, pos):
         """

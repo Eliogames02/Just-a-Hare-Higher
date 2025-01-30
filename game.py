@@ -56,6 +56,7 @@ class Game:
         py.font.init()
         self.title_text = py.font.SysFont('Times New Roman', 36)
         self.text = py.font.SysFont('Times New Roman', 24)
+        self.bg_text = py.font.SysFont('Times New Roman', 28)
         self.number_text = py.font.SysFont('Times New Roman', 60)
 
         self.main_menu = py.Surface((640,360), py.SRCALPHA)
@@ -81,7 +82,11 @@ class Game:
         """
         for i in range(1, 6):
             self.load(i)
-        self.high_scores = {1: self.levels[1]['Score'], 2: self.levels[2]['Score'], 3: self.levels[3]['Score'], 4: self.levels[4]['Score'], 5: self.levels[5]['Score']}
+        self.high_scores = {1: [self.levels[1]['Carrots'], self.levels[1]['Radishes'], self.levels[1]['Score']], 
+                            2: [self.levels[2]['Carrots'], self.levels[2]['Radishes'], self.levels[2]['Score']], 
+                            3: [self.levels[3]['Carrots'], self.levels[3]['Radishes'], self.levels[3]['Score']], 
+                            4: [self.levels[4]['Carrots'], self.levels[4]['Radishes'], self.levels[4]['Score']], 
+                            5: [self.levels[5]['Carrots'], self.levels[5]['Radishes'], self.levels[5]['Score']]}
         
         while self.title_screen_loop:
             
@@ -123,7 +128,7 @@ class Game:
                 self.main_menu.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 28)))
 
             for i in range(5):
-                self.main_menu.blit(py.font.Font.render(self.text, str(self.high_scores[i+1]), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 20, self.menu_rect[1] + self.menu_radius + 83)))
+                self.main_menu.blit(py.font.Font.render(self.text, str(self.high_scores[i+1][2]), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 20, self.menu_rect[1] + self.menu_radius + 83)))
 
             # draw the current level "button" differently
             if py.Rect((self.menu_rect[0] + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 530*self.scale, 94*self.scale).collidepoint(py.mouse.get_pos()):
@@ -388,8 +393,12 @@ class Game:
 
         self.game_overlay = py.Surface((640, 360), py.SRCALPHA)
 
-        while self.level_loop:
+        self.start_time = time.time()
+
+        while self.level_loop: 
             self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0, 0))
+
+            self.game_overlay.fill((0, 0, 0, 5))
 
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() /2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() /2 - self.scroll[1]) / 12
@@ -440,6 +449,33 @@ class Game:
                 py.draw.rect(self.game_overlay, (0, 150, 0, 150), (27+128, 35, 190*(jump_time - 8)*1/6-4, 30), 0, 15)
             
             py.draw.rect(self.game_overlay, (0, 0, 0, 150), (15, 35, 200, 30), 2, 15)
+
+            # Draw Number of carrots & radishes - to show the player how many they've collected 
+
+            carrot = load_image("collectibles/carrot.png")
+            radish = load_image("collectibles/radish.png")
+
+            carrot.set_alpha(150)
+            radish.set_alpha(150)
+
+            self.game_overlay.blit(carrot, (520, 15))
+            #self.game_overlay.blit(py.font.Font.render(self.bg_text, str(self.score), True, 'white'), (539,11))
+            self.game_overlay.blit(py.font.Font.render(self.text, str(self.score), None, 'black', 'white'), (540, 12))
+
+            self.game_overlay.blit(radish, (580, 15))
+            self.game_overlay.blit(py.font.Font.render(self.text, str(self.super_score), None, 'black'), (600, 12))
+
+            # Draw the time spent in the level
+
+            self.level_time = round(time.time() - self.start_time, 2)
+
+            hour = '0'+str(int(self.level_time//3600)) if self.level_time//3600 < 10 else str(int(self.level_time//3600))
+            minute = '0'+ str(int(self.level_time//60 - self.level_time//3600*60)) if self.level_time//60 - self.level_time//3600*60 < 10 else str(int(self.level_time//60 - self.level_time//3600*60))
+            second = '0'+str(int(self.level_time - self.level_time//60*60)) if self.level_time - self.level_time//60*60 < 10 else str(int(self.level_time - self.level_time//60*60))
+
+            self.current_time = hour+':'+minute+':'+second
+
+            self.game_overlay.blit(py.font.Font.render(self.text, str(self.current_time), None, 'black'), (530, 47))
 
             self.display.blit(self.game_overlay, (0,0))
 
@@ -509,6 +545,8 @@ class Game:
                         self.player.velocity[1] -= (jump_time)
                     jump_time = 0
                     jump = False
+                    self.player.jumps = 0
+
 
     def load_level(self, map_id=0) -> None:
         """
@@ -533,6 +571,8 @@ class Game:
             self.exit_game()
 
         self.current_level = map_id
+
+        self.fastest_time = self.levels[self.current_level]['Fastest_Time']
         
         #* creates list to hold all projectiles
         self.projectiles = {}
@@ -543,13 +583,13 @@ class Game:
         for collectible in self.tilemap.extract([('collectible', 0), ('collectible', 1), ('collectible', 2)]):
             if collectible['variant'] == 0:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16)))
-                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
+                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
             elif collectible['variant'] == 1:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 1))
-                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
+                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
             else: 
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 2))
-                self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
+                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
         
         #* enemies
         self.enemies = []
@@ -560,7 +600,10 @@ class Game:
                 self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
             elif spawner['variant'] == 1:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
-            else: self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
+                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
+            else: 
+                self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
+                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
     
     def end_level(self) -> None:
         """
@@ -572,6 +615,7 @@ class Game:
         
         :return: None
         """
+        self.final_time = time.time() - self.start_time
         self.level_loop = False 
         self.win_screen_loop = True
         self.win_menu()
@@ -658,7 +702,13 @@ class Game:
         """
         with open(f'data/save_data/save{file}.json', 'r') as f:
             save_data = json.load(f)
-        self.levels[save_data['Level']] = {'Completed': save_data['Completed'], 'Carrots': save_data['Carrots'], 'Radishes': save_data['Radishes'], 'Score': save_data['Score'], 'Completion': save_data['Completion']}
+        self.levels[save_data['Level']] = {'Completed': save_data['Completed'], 
+                                           'Carrots': save_data['Carrots'], 
+                                           'Radishes': save_data['Radishes'], 
+                                           'Score': save_data['Score'], 
+                                           'Completion': save_data['Completion'], 
+                                           'Time': save_data['Time'], 
+                                           'Fastest_Time': save_data['Fastest_Time']}
         
     def save(self, file) -> None:
         """
@@ -674,10 +724,32 @@ class Game:
         :param file: the number of the save file to save to
         :return: None
         """
-        if self.score*10 + self.super_score*100 > self.high_scores[file]:
-            self.high_scores[file] = self.score*10 + self.super_score*100
+        if self.score*10 + self.super_score*100 > self.high_scores[file][2]:
+            self.high_scores[file][2] = self.score*10 + self.super_score*100
+        if self.score > self.high_scores[file][0]:
+            self.high_scores[file][0] = self.score
+        if self.super_score > self.high_scores[file][1]:
+            self.high_scores[file][1] = self.super_score
+        print(f'OLD - Final Time: {self.final_time} | Fastest Time: {self.fastest_time}')
+        if self.final_time < self.fastest_time:
+            self.fastest_time = self.final_time
+        print(f'NEW - Final Time: {self.final_time} | Fastest Time: {self.fastest_time}')
+
+        hours = '0'+str(int(self.fastest_time//3600)) if self.fastest_time//3600 < 10 else str(int(self.fastest_time//3600))
+        minutes = '0'+ str(int(self.fastest_time//60 - self.fastest_time//3600*60)) if self.fastest_time//60 - self.fastest_time//3600*60 < 10 else str(int(self.fastest_time//60 - self.fastest_time//3600*60))
+        seconds = '0'+str(int(self.fastest_time - self.fastest_time//60*60)) if self.fastest_time - self.fastest_time//60*60 < 10 else str(int(self.fastest_time - self.fastest_time//60*60))
+
+        end_time = hours + ':' + minutes + ":" + seconds
+        
         with open(f'data/save_data/save{file}.json', 'w') as f:
-            json.dump({"Level": self.current_level, "Completed": True, "Carrots": self.score, "Radishes": self.super_score, "Score": self.high_scores[file], "Completion": str(round((self.score*10 + self.super_score*100)*0.07692307692, 3))+"%"}, f)
+            json.dump({"Level": self.current_level, 
+                       "Completed": True, 
+                       "Carrots": self.high_scores[file][0], 
+                       "Radishes": self.high_scores[file][1], 
+                       "Score": self.high_scores[file][2], 
+                       "Completion": str(round((self.high_scores[file][0]*10 + self.high_scores[file][1]*100)*0.07692307692, 3))+"%", 
+                       "Time": end_time,
+                       "Fastest_Time": round(self.fastest_time, 3)}, f)
     
     def wipe_data(self) -> None:
         """
@@ -691,7 +763,7 @@ class Game:
         """
         for i in range(1, 6):
             with open(f'data/save_data/save{i}.json', 'w') as f:
-                json.dump({"Level": i, "Completed": False, "Carrots": 0, "Radishes": 0, "Score": 0, "Completion": "0%"}, f)
+                json.dump({"Level": i, "Completed": False, "Carrots": 0, "Radishes": 0, "Score": 0, "Completion": "0%", "Time": "99:59:59", "Time_Data": 359999}, f)
 
 
 if __name__ == "__main__":

@@ -370,7 +370,7 @@ class TickEnemy(Enemy):
             velocity (list): The initial velocity of the tick enemy.
         """
         super().__init__(game, 'tick_enemy', pos, size)
-        self.velocity = [2, 0]
+        self.velocity = [random.choice([-1.2,-1,-0.8,0.8,1,1.2])*3.5, 0]
 
     def update(self):
         """
