@@ -44,7 +44,7 @@ class Editor:
         py.display.set_caption('editor')
         self.screen = py.display.set_mode((1920, 1080))
         self.display = py.Surface((640, 360))
-        map_name = '1'
+        map_name = '2'
 
         # clock/fps setup
         self.clock = py.time.Clock()

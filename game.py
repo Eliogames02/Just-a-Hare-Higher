@@ -55,8 +55,9 @@ class Game:
 
         py.font.init()
         self.title_text = py.font.SysFont('Times New Roman', 36)
-        self.text = py.font.SysFont('Times New Roman', 24)
-        self.bg_text = py.font.SysFont('Times New Roman', 28)
+        self.normal_text = py.font.SysFont('Times New Roman', 24)
+        self.menu_text = py.font.SysFont('Times New Roman', 18)
+        self.smol_text = py.font.SysFont('Times New Roman', 14)
         self.number_text = py.font.SysFont('Times New Roman', 60)
 
         self.main_menu = py.Surface((640,360), py.SRCALPHA)
@@ -118,30 +119,40 @@ class Game:
                 
             # draw the level "buttons" 
             for i in range(5):
-                py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 0, 25)
-                py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 2, 25)
-                if self.levels[i]['Completed'] == False:
-                    py.draw.line(self.display, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 15 + 94), 2)
-                    py.draw.line(self.display, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 15), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15 + 94), 2)
+                py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5, 94, 63), 0, 25)
+                py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5, 94, 63), 2, 25)
+                
             # draw the text for the level "buttons"
             for i in range(5):
-                self.main_menu.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 28)))
+                self.main_menu.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 4)))
+                if self.levels[i]['Completed'] == False:
+                    py.draw.line(self.main_menu, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 5 + 63), 2)
+                    py.draw.line(self.main_menu, (150, 0, 0), (self.menu_rect[0] + i*94 +15*(i+1) + 94, self.menu_rect[1] + self.menu_radius + 5), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5 + 63), 2)
+
+            self.main_menu.blit(py.font.Font.render(self.smol_text, 'High Scores', True, (0, 0, 0, 150)), ((self.menu_rect[0] + 5, self.menu_rect[1] + self.menu_radius + 70)))
+            self.main_menu.blit(py.font.Font.render(self.smol_text, 'Fastest Times', True, (0, 0, 0, 150)), ((self.menu_rect[0] + 5, self.menu_rect[1] + self.menu_radius + 90)))
 
             for i in range(5):
-                self.main_menu.blit(py.font.Font.render(self.text, str(self.high_scores[i+1][2]), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 20, self.menu_rect[1] + self.menu_radius + 83)))
+                self.main_menu.blit(py.font.Font.render(self.menu_text, str(self.high_scores[i+1][2]), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 60, self.menu_rect[1] + self.menu_radius + 70)))
+            
+            for i in range(5):
+                if self.levels[i+1]['Time'] == '99:59:59':
+                    self.main_menu.blit(py.font.Font.render(self.menu_text, 'N/A', True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 32, self.menu_rect[1] + self.menu_radius + 100)))
+                else:
+                    self.main_menu.blit(py.font.Font.render(self.menu_text, str(self.levels[i+1]['Time']), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 32, self.menu_rect[1] + self.menu_radius + 100)))
 
             # draw the current level "button" differently
             if py.Rect((self.menu_rect[0] + 15)*self.scale, (self.menu_rect[1] + self.menu_radius + 15)*self.scale, 530*self.scale, 94*self.scale).collidepoint(py.mouse.get_pos()):
                 # draw the menu "buttons"
                 for i in range(5):
                     if self.rects[i].collidepoint(py.mouse.get_pos()) and self.levels[i]['Completed'] == True:
-                        py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 0, 25)
-                        py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 15, 94, 94), 2, 25)
+                        py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5, 94, 63), 0, 25)
+                        py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + i*94 +15*(i+1), self.menu_rect[1] + self.menu_radius + 5, 94, 63), 2, 25)
             
                 # draw the text for the menu "buttons"
                 for i in range(5):
                     if self.rects[i].collidepoint(py.mouse.get_pos()):
-                        self.display.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 28)))
+                        self.display.blit(py.font.Font.render(self.number_text, str(i+1), True, (0, 0, 0, 150)), ((self.menu_rect[0] + i*94 +15*(i+1) + 28, self.menu_rect[1] + self.menu_radius + 4)))
             
             # draw the settings "button"
             py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + 15, self.menu_rect[1] + self.menu_radius + 124, 203, 94), 0, 25)
@@ -294,7 +305,7 @@ class Game:
             # draw the wipe data button
             py.draw.rect(self.main_menu, (150, 150, 150, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 0, 25)
             py.draw.rect(self.main_menu, (0, 0, 0, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 2, 25)
-            self.main_menu.blit(py.font.Font.render(self.text, 'Wipe Data', True, (0, 0, 0, 150)), ((self.menu_rect[0] + 365, self.menu_rect[1] +10)))
+            self.main_menu.blit(py.font.Font.render(self.normal_text, 'Wipe Data', True, (0, 0, 0, 150)), ((self.menu_rect[0] + 365, self.menu_rect[1] +10)))
             if py.Rect((self.menu_rect[0] + 342)*self.scale, (self.menu_rect[1] + 3)*self.scale, 150*self.scale, 47*self.scale).collidepoint(py.mouse.get_pos()):
                 py.draw.rect(self.display, (150, 150, 150, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 0, 25)
                 py.draw.rect(self.display, (0, 0, 0, 150), (self.menu_rect[0] + 342, self.menu_rect[1]+3, 150, 47), 2, 25)
@@ -395,6 +406,8 @@ class Game:
 
         self.start_time = time.time()
 
+        self.reset = False
+
         while self.level_loop: 
             self.display.blit(py.transform.scale(self.assets['background'], self.display.get_size()), (0, 0))
 
@@ -433,11 +446,15 @@ class Game:
 
             self.player_input() # handles player inputs
 
+            if self.reset == True:
+                self.reset = False
+                self.reset_level()
+
             if jump == True:
                 jump_time = min(10, round(max(4, jump_time + 1/20), 2))
             
             # Draw Jump Power Gauge
-            self.game_overlay.blit(py.font.Font.render(self.text, "Jump Power", False, (0, 0, 0)), (25, 5))
+            self.game_overlay.blit(py.font.Font.render(self.normal_text, "Jump Power", False, (0, 0, 0)), (25, 5))
             py.draw.rect(self.game_overlay, (150, 150, 150, 150), (15, 35, 200, 30), 0, 15) 
             py.draw.circle(self.game_overlay, (150, 0, 0, 150), (30, 50), 15, 0)
             
@@ -455,15 +472,14 @@ class Game:
             carrot = load_image("collectibles/carrot.png")
             radish = load_image("collectibles/radish.png")
 
-            carrot.set_alpha(150)
-            radish.set_alpha(150)
+            carrot.set_alpha(200)
+            radish.set_alpha(200)
 
             self.game_overlay.blit(carrot, (520, 15))
-            #self.game_overlay.blit(py.font.Font.render(self.bg_text, str(self.score), True, 'white'), (539,11))
-            self.game_overlay.blit(py.font.Font.render(self.text, str(self.score), None, 'black', 'white'), (540, 12))
+            self.game_overlay.blit(py.font.Font.render(self.normal_text, str(self.score), None, 'black'), (540, 12))
 
             self.game_overlay.blit(radish, (580, 15))
-            self.game_overlay.blit(py.font.Font.render(self.text, str(self.super_score), None, 'black'), (600, 12))
+            self.game_overlay.blit(py.font.Font.render(self.normal_text, str(self.super_score), None, 'black'), (600, 12))
 
             # Draw the time spent in the level
 
@@ -475,7 +491,7 @@ class Game:
 
             self.current_time = hour+':'+minute+':'+second
 
-            self.game_overlay.blit(py.font.Font.render(self.text, str(self.current_time), None, 'black'), (530, 47))
+            self.game_overlay.blit(py.font.Font.render(self.normal_text, str(self.current_time), None, 'black'), (530, 47))
 
             self.display.blit(self.game_overlay, (0,0))
 
@@ -583,13 +599,10 @@ class Game:
         for collectible in self.tilemap.extract([('collectible', 0), ('collectible', 1), ('collectible', 2)]):
             if collectible['variant'] == 0:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16)))
-                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
             elif collectible['variant'] == 1:
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 1))
-                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
             else: 
                 self.collectibles.append(Collectible(self, collectible['pos'], (16, 16), 2))
-                #self.tilemap.tilemap[str(int(collectible['pos'][0]/self.tilemap.tile_size))+';'+str(int(collectible['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(collectible['pos'][0]/self.tilemap.tile_size), int(collectible['pos'][1]/self.tilemap.tile_size))}
         
         #* enemies
         self.enemies = []
@@ -597,13 +610,10 @@ class Game:
         for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
-                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
             elif spawner['variant'] == 1:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
-                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
             else: 
                 self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
-                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'empty_dirt', 'variant': 0, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
     
     def end_level(self) -> None:
         """
@@ -676,6 +686,12 @@ class Game:
             py.display.flip()
             self.clock.tick(60) # limit FPS to 60 per second
 
+    def reset_level(self) -> None:
+        self.score = 0
+        self.super_score = 0
+        self.load_level(self.current_level)
+        self.scroll = [self.player.pos[0] - self.display.get_width()/2, self.player.pos[1] - self.display.get_height()/2]
+
     def exit_game(self) -> None:
         """
         Exits the game cleanly.
@@ -730,10 +746,8 @@ class Game:
             self.high_scores[file][0] = self.score
         if self.super_score > self.high_scores[file][1]:
             self.high_scores[file][1] = self.super_score
-        print(f'OLD - Final Time: {self.final_time} | Fastest Time: {self.fastest_time}')
         if self.final_time < self.fastest_time:
             self.fastest_time = self.final_time
-        print(f'NEW - Final Time: {self.final_time} | Fastest Time: {self.fastest_time}')
 
         hours = '0'+str(int(self.fastest_time//3600)) if self.fastest_time//3600 < 10 else str(int(self.fastest_time//3600))
         minutes = '0'+ str(int(self.fastest_time//60 - self.fastest_time//3600*60)) if self.fastest_time//60 - self.fastest_time//3600*60 < 10 else str(int(self.fastest_time//60 - self.fastest_time//3600*60))
@@ -763,7 +777,7 @@ class Game:
         """
         for i in range(1, 6):
             with open(f'data/save_data/save{i}.json', 'w') as f:
-                json.dump({"Level": i, "Completed": False, "Carrots": 0, "Radishes": 0, "Score": 0, "Completion": "0%", "Time": "99:59:59", "Time_Data": 359999}, f)
+                json.dump({"Level": i, "Completed": False, "Carrots": 0, "Radishes": 0, "Score": 0, "Completion": "0%", "Time": "99:59:59", "Fastest_Time": 359999}, f)
 
 
 if __name__ == "__main__":

@@ -254,6 +254,8 @@ class Player(PhysicsEntity):
 
         super().update()
 
+        # if collide with enemy / projectile, reset level
+
     def is_touching_ground(self) -> bool:
         """
         Checks if the player is currently touching the ground.
@@ -408,6 +410,9 @@ class TickEnemy(Enemy):
             if self.rect().colliderect(enemy.rect()) and enemy.id != self.id:
                self.velocity[0] *= -1
 
+        if self.rect().colliderect(self.game.player.rect()):
+            self.game.reset_level()
+
 class DungEnemy(Enemy):
     def __init__(self, game, pos, size):
         """
@@ -448,6 +453,9 @@ class DungEnemy(Enemy):
             self.throw_projectile()
             self.time_since_throw = 0
         else: self.time_since_throw += 1/60
+
+        if self.rect().colliderect(self.game.player.rect()):
+            self.game.reset_level()
 
     def throw_projectile(self):
         """
@@ -533,6 +541,6 @@ class Projectile(PhysicsEntity):
             if projectile_rect.colliderect(enemy.rect()) and enemy.enemy_type != 'dung_enemy': #* Could damage enemies
                 self.game.projectiles_to_delete.append(self.id) 
                 return
-        if projectile_rect.colliderect(self.game.player.rect()): #* Needs to send some signal to player or the game to end it, or deal damage to player
-            self.game.projectiles_to_delete.append(self.id) 
+        if projectile_rect.colliderect(self.game.player.rect()): #* Needs to send some signal to player or the game to end it, or deal damage to player 
+            self.game.reset_level()
             return
