@@ -52,7 +52,6 @@ class Tilemap:
                 matches[-1]['pos'][1] *= self.tile_size
                 if not keep:
                     del self.tilemap[location]
-        
         return matches
 
     def render(self, surface, offset=(0, 0)):
@@ -77,8 +76,23 @@ class Tilemap:
                 location = str(x) + ';' + str(y)
                 if location in self.tilemap:
                     tile = self.tilemap[location]
-                    surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
-
+                    if tile['variant'] != 3: 
+                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                    else:
+                        try:
+                            if self.game.current_level == 1: 
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "WAD - Arrow Keys - Space", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "Get to the Star", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], (tile['pos'][1]+2) * self.tile_size - offset[1]))
+                            if self.game.current_level == 2: 
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "They're Not Nice", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                            if self.game.current_level == 3: 
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "Look Out from Above", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                            if self.game.current_level == 4: 
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "Watch the Ground for Moles", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                            if self.game.current_level == 5: 
+                                self.game.display.blit(py.font.Font.render(self.game.normal_text, "Just One Hare Higher", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                        except AttributeError:
+                            pass
     def tiles_around(self, pos):
         """
         Returns a list of tiles surrounding the given position in the tilemap.

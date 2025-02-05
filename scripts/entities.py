@@ -544,3 +544,12 @@ class Projectile(PhysicsEntity):
         if projectile_rect.colliderect(self.game.player.rect()): #* Needs to send some signal to player or the game to end it, or deal damage to player 
             self.game.reset_level()
             return
+
+class MoleEnemy(Enemy):
+    def __init__(self, game, pos, size):
+        super().__init__(game, 'mole_enemy', [pos[0], pos[1]-1], size)
+    
+    def update(self):
+        self.anim_offset = [0, 1]
+        if self.rect().colliderect(self.game.player.rect()):
+            self.game.player.pos[1] += 48

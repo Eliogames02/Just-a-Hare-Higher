@@ -360,6 +360,7 @@ class Game:
             'tick_enemy/idle': Animation(load_images('entities/tick_enemy')),
             'dung_enemy/idle': Animation(load_images('entities/dung_enemy')),
             'projectile/idle': Animation(load_images('entities/projectiles')),
+            'mole_enemy/idle': Animation(load_images('entities/mole_enemy')),
         }
 
         #* Assemble the level
@@ -519,12 +520,12 @@ class Game:
                 - ESCAPE: Exits the game.
                 - LEFT/A: Moves the player left.
                 - RIGHT/D: Moves the player right.
-                - UP/W: Starts charging the player's jump.
+                - UP/W/SPACE: Starts charging the player's jump.
                 - M: Ends the current level.
             - KEYUP:
                 - LEFT/A: Stops moving the player left.
                 - RIGHT/D: Stops moving the player right.
-                - UP/W: Executes the player's jump if possible.
+                - UP/W/SPACE: Executes the player's jump if possible.
         """
 
         global jump, jump_time
@@ -542,11 +543,11 @@ class Game:
                 if event.key == py.K_RIGHT or event.key == py.K_d:
                     # move player right
                     self.player.velocity[0] += self.move_speed
-                if event.key == py.K_UP or event.key == py.K_w:
+                if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
                     # start charging the player's jump
                     jump = True
-                if event.key == py.K_m:
-                    self.end_level()
+                if py.key.get_pressed()[py.K_BACKQUOTE] and (py.key.get_pressed()[py.K_LSHIFT] or py.key.get_pressed()[py.K_RSHIFT]): 
+                    self.end_level() # "complete" the level upon pressing the ~ key
 
             if event.type == py.KEYUP:
                 if event.key == py.K_LEFT or event.key == py.K_a:
@@ -555,7 +556,7 @@ class Game:
                 if event.key == py.K_RIGHT or event.key == py.K_d:
                     # stop moving player right
                     self.player.velocity[0] -= self.move_speed
-                if event.key == py.K_UP or event.key == py.K_w:
+                if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
                     # make the player jump
                     if self.player.jumps > 0:
                         self.player.velocity[1] -= (jump_time)
@@ -607,13 +608,15 @@ class Game:
         #* enemies
         self.enemies = []
         self.enemies_id = []
-        for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2)]):
+        for spawner in self.tilemap.extract([('spawner', 0), ('spawner', 1), ('spawner', 2), ('spawner', 3)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
             elif spawner['variant'] == 1:
                 self.enemies.append(TickEnemy(self, spawner['pos'], (16, 16)))
-            else: 
+            elif spawner['variant'] == 2: 
                 self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
+            else:
+                self.enemies.append(MoleEnemy(self, spawner['pos'], (16, 16)))
     
     def end_level(self) -> None:
         """
