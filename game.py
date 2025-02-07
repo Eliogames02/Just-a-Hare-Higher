@@ -690,8 +690,12 @@ class Game:
             self.clock.tick(60) # limit FPS to 60 per second
 
     def reset_level(self) -> None:
+        global jump, jump_time
         self.score = 0
         self.super_score = 0
+        jump = False
+        self.player.jumps = 0
+        jump_time = 0
         self.load_level(self.current_level)
         self.scroll = [self.player.pos[0] - self.display.get_width()/2, self.player.pos[1] - self.display.get_height()/2]
 

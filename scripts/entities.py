@@ -372,7 +372,7 @@ class TickEnemy(Enemy):
             velocity (list): The initial velocity of the tick enemy.
         """
         super().__init__(game, 'tick_enemy', pos, size)
-        self.velocity = [random.choice([-1.2,-1,-0.8,0.8,1,1.2])*3.5, 0]
+        self.velocity = [random.choice([-1.2,-1,-0.8,0.8,1,1.2])*2.5, 0]
 
     def update(self):
         """
@@ -407,7 +407,7 @@ class TickEnemy(Enemy):
                 self.velocity[0] *= -1
 
         for enemy in self.game.enemies:
-            if self.rect().colliderect(enemy.rect()) and enemy.id != self.id:
+            if self.rect().colliderect(enemy.rect()) and enemy.id != self.id and enemy.enemy_type == 'tick_enemy':
                self.velocity[0] *= -1
 
         if self.rect().colliderect(self.game.player.rect()):
@@ -449,7 +449,7 @@ class DungEnemy(Enemy):
         super().update()
         self.x_player_offset = self.pos[0] - self.game.player.pos[0] # updates the x offset between the enemy and the player
         self.y_player_offset = self.pos[1] - self.game.player.pos[1] # updates the y offset between the enemy and the player
-        if self.distance_to_player() <= 240 and self.time_since_throw >= 2:
+        if self.distance_to_player() <= 200 and self.time_since_throw >= 2:
             self.throw_projectile()
             self.time_since_throw = 0
         else: self.time_since_throw += 1/60
@@ -533,6 +533,9 @@ class Projectile(PhysicsEntity):
             self.falling = 1
         
         projectile_rect = self.rect()
+        if projectile_rect.colliderect(self.game.player.rect()): #* Needs to send some signal to player or the game to end it, or deal damage to player 
+            self.game.reset_level()
+            return
         for collision in self.collisions.values():
             if collision == True: # if the projectile is colliding with anything
                 self.game.projectiles_to_delete.append(self.id) 
@@ -541,9 +544,7 @@ class Projectile(PhysicsEntity):
             if projectile_rect.colliderect(enemy.rect()) and enemy.enemy_type != 'dung_enemy': #* Could damage enemies
                 self.game.projectiles_to_delete.append(self.id) 
                 return
-        if projectile_rect.colliderect(self.game.player.rect()): #* Needs to send some signal to player or the game to end it, or deal damage to player 
-            self.game.reset_level()
-            return
+        
 
 class MoleEnemy(Enemy):
     def __init__(self, game, pos, size):
