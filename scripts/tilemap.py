@@ -75,10 +75,8 @@ class Tilemap:
             for y in range(offset[1] // self.tile_size, (offset[1] + surface.get_height()) // self.tile_size + 1):
                 location = str(x) + ';' + str(y)
                 if location in self.tilemap:
-                    tile = self.tilemap[location]
-                    if tile['variant'] != 3: 
-                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
-                    else:
+                    tile = self.tilemap[location] 
+                    if tile['type'] == 'empty_dirt' and tile['variant'] == 3:
                         try:
                             if self.game.current_level == 1: 
                                 self.game.display.blit(py.font.Font.render(self.game.normal_text, "WAD - Arrow Keys - Space", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
@@ -93,6 +91,10 @@ class Tilemap:
                                 self.game.display.blit(py.font.Font.render(self.game.normal_text, "Just One Hare Higher", True, (0, 0, 0)), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
                         except AttributeError:
                             pass
+                    elif tile['type'] == 'air' and tile['variant'] == 0 and self.game.__str__() != 'Game':
+                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][1], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
+                    else:
+                        surface.blit(py.transform.rotate(self.game.assets[tile['type']][tile['variant']], -90 * tile['rotations']), (tile['pos'][0] * self.tile_size - offset[0], tile['pos'][1] * self.tile_size - offset[1]))
     def tiles_around(self, pos):
         """
         Returns a list of tiles surrounding the given position in the tilemap.

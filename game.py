@@ -36,10 +36,13 @@ class Game:
         """
         py.init()
 
+        self.width = 640
+        self.height = 360
+
         # create game window
         py.display.set_caption("Just a Hare Higher")
         self.screen = py.display.set_mode((1920, 1080))
-        self.display = py.Surface((640, 360))
+        self.display = py.Surface((self.width, self.height))
         self.scale = 3
 
         self.clock = py.time.Clock()
@@ -403,6 +406,8 @@ class Game:
 
         global jump, jump_time
 
+        self.debug = False
+
         self.game_overlay = py.Surface((640, 360), py.SRCALPHA)
 
         self.start_time = time.time()
@@ -441,8 +446,11 @@ class Game:
                 projectile.render(self.display, offset=render_scroll)
 
             for projectile in self.projectiles_to_delete:
-                self.projectiles_id.remove(projectile)
-                del self.projectiles[projectile]
+                try:
+                    self.projectiles_id.remove(projectile)
+                    del self.projectiles[projectile]
+                except ValueError:
+                    pass
             self.projectiles_to_delete.clear()
 
             self.player_input() # handles player inputs
@@ -452,7 +460,7 @@ class Game:
                 self.reset_level()
 
             if jump == True:
-                jump_time = min(10, round(max(4, jump_time + 1/20), 2))
+                jump_time = min(10, round(max(4, jump_time + 1/15), 2))
             
             # Draw Jump Power Gauge
             self.game_overlay.blit(py.font.Font.render(self.normal_text, "Jump Power", False, (0, 0, 0)), (25, 5))
@@ -537,32 +545,57 @@ class Game:
             if event.type == py.KEYDOWN:
                 if event.key == py.K_ESCAPE:
                     self.exit_game()
-                if event.key == py.K_LEFT or event.key == py.K_a:
-                    # move player left 
-                    self.player.velocity[0] -= self.move_speed
-                if event.key == py.K_RIGHT or event.key == py.K_d:
-                    # move player right
-                    self.player.velocity[0] += self.move_speed
-                if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
-                    # start charging the player's jump
-                    jump = True
+                if event.key == py.K_m:
+                    self.debug = True if self.debug == False else False
+                if self.debug == False:
+                    if event.key == py.K_LEFT or event.key == py.K_a:
+                        # move player left 
+                        self.player.velocity[0] -= self.move_speed
+                    if event.key == py.K_RIGHT or event.key == py.K_d:
+                        # move player right
+                        self.player.velocity[0] += self.move_speed
+                    if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
+                        # start charging the player's jump
+                        jump = True
+                else:
+                    if event.key == py.K_LEFT or event.key == py.K_a:
+                        # move player left 
+                        self.player.velocity[0] = -3*self.move_speed
+                    if event.key == py.K_RIGHT or event.key == py.K_d:
+                        # move player right
+                        self.player.velocity[0] = 3*self.move_speed
+                    if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
+                        # start charging the player's jump
+                        self.player.velocity[1] = -3*self.move_speed
                 if py.key.get_pressed()[py.K_BACKQUOTE] and (py.key.get_pressed()[py.K_LSHIFT] or py.key.get_pressed()[py.K_RSHIFT]): 
                     self.end_level() # "complete" the level upon pressing the ~ key
+                
 
             if event.type == py.KEYUP:
-                if event.key == py.K_LEFT or event.key == py.K_a:
-                    # stop moving player left
-                    self.player.velocity[0] += self.move_speed
-                if event.key == py.K_RIGHT or event.key == py.K_d:
-                    # stop moving player right
-                    self.player.velocity[0] -= self.move_speed
-                if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
-                    # make the player jump
-                    if self.player.jumps > 0:
-                        self.player.velocity[1] -= (jump_time)
-                    jump_time = 0
-                    jump = False
-                    self.player.jumps = 0
+                if self.debug == False:
+                    if event.key == py.K_LEFT or event.key == py.K_a:
+                        # stop moving player left
+                        self.player.velocity[0] += self.move_speed
+                    if event.key == py.K_RIGHT or event.key == py.K_d:
+                        # stop moving player right
+                        self.player.velocity[0] -= self.move_speed
+                    if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
+                        # make the player jump
+                        if self.player.jumps > 0:
+                            self.player.velocity[1] -= (jump_time)
+                        jump_time = 0
+                        jump = False
+                        self.player.jumps = 0
+                else:
+                    if event.key == py.K_LEFT or event.key == py.K_a:
+                        # stop moving player left
+                        self.player.velocity[0] = 0
+                    if event.key == py.K_RIGHT or event.key == py.K_d:
+                        # stop moving player right
+                        self.player.velocity[0] = 0
+                    if event.key == py.K_UP or event.key == py.K_w or event.key == py.K_SPACE:
+                        # make the player jump
+                        self.player.velocity[1] = 0
 
 
     def load_level(self, map_id=0) -> None:
@@ -617,6 +650,7 @@ class Game:
                 self.enemies.append(DungEnemy(self, spawner['pos'], (16, 16)))
             else:
                 self.enemies.append(MoleEnemy(self, spawner['pos'], (16, 16)))
+                self.tilemap.tilemap[str(int(spawner['pos'][0]/self.tilemap.tile_size))+';'+str(int(spawner['pos'][1]/self.tilemap.tile_size))] = {'type': 'dirt', 'variant': 4, 'rotations': 0, 'pos': (int(spawner['pos'][0]/self.tilemap.tile_size), int(spawner['pos'][1]/self.tilemap.tile_size))}
     
     def end_level(self) -> None:
         """
@@ -691,13 +725,15 @@ class Game:
 
     def reset_level(self) -> None:
         global jump, jump_time
-        self.score = 0
-        self.super_score = 0
-        jump = False
-        self.player.jumps = 0
-        jump_time = 0
-        self.load_level(self.current_level)
-        self.scroll = [self.player.pos[0] - self.display.get_width()/2, self.player.pos[1] - self.display.get_height()/2]
+        if self.debug == False:
+            self.score = 0
+            self.super_score = 0
+            jump = False
+            self.player.jumps = 0
+            jump_time = 0
+            self.load_level(self.current_level)
+            self.scroll = [self.player.pos[0] - self.display.get_width()/2, self.player.pos[1] - self.display.get_height()/2]
+        else: pass
 
     def exit_game(self) -> None:
         """

@@ -49,7 +49,6 @@ class Editor:
 
         # clock/fps setup
         self.clock = py.time.Clock()
-
         # assets setup
         self.assets = {
             'dirt': load_images('tiles/dirt'),

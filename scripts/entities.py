@@ -37,6 +37,7 @@ class PhysicsEntity:
         self.flip = False # whether the direction of the entity is flipped
         self.action = '' # the current action of the entity
         self.anim_offset = (0, 0) # the offset of the animation from the entity's position
+        self.offscreen_offset = 256 # the amount of pixels offscreen before the entity isn't updated
 
         self.NULL_RECT = py.Rect(-1000, -1000, 1, 1) #! THE NULL RECT IS REAL
 
@@ -251,8 +252,11 @@ class Player(PhysicsEntity):
 
         Calls the parent class's update method and updates the player's jump state accordingly.
         """
-
-        super().update()
+        if self.game.debug == False:
+            super().update()
+        else:
+            self.pos[0] += self.velocity[0]
+            self.pos[1] += self.velocity[1]
 
         # if collide with enemy / projectile, reset level
 
@@ -357,6 +361,22 @@ class Enemy(PhysicsEntity):
         while self.id in game.enemies_id:
             self.id = random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options) + random.choice(self.id_options)
         game.enemies_id.append(self.id)
+    
+    def update(self):
+        """
+        Updates the enemy's position and handles collisions.
+
+        This method updates the position of the enemy by checking its velocity
+        and adjusting its direction when necessary. It checks for collisions with
+        tiles below and beside the enemy to determine if it should turn around. If
+        the enemy is about to move off a platform or run into a wall, its
+        horizontal velocity is reversed. Additionally, the method checks for
+        collisions with other enemies, and reverses direction upon collision to
+        prevent overlap.
+        """
+        if self.pos[0] + self.size[0] < self.game.scroll[0]-self.offscreen_offset or self.pos[0] > self.game.scroll[0] + self.game.width + self.offscreen_offset or self.pos[1] + self.size[1] < self.game.scroll[1]-self.offscreen_offset or self.pos[1] > self.game.scroll[1] + self.game.height + self.offscreen_offset:
+            return
+        super().update()
 
 class TickEnemy(Enemy):
     def __init__(self, game, pos, size):
@@ -449,7 +469,7 @@ class DungEnemy(Enemy):
         super().update()
         self.x_player_offset = self.pos[0] - self.game.player.pos[0] # updates the x offset between the enemy and the player
         self.y_player_offset = self.pos[1] - self.game.player.pos[1] # updates the y offset between the enemy and the player
-        if self.distance_to_player() <= 200 and self.time_since_throw >= 2:
+        if self.distance_to_player() <= 200 and self.time_since_throw >= 2.5:
             self.throw_projectile()
             self.time_since_throw = 0
         else: self.time_since_throw += 1/60
